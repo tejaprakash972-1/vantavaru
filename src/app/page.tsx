@@ -1,68 +1,88 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  CookingPot,
+  Heart,
+  House,
+  Leaf,
+  LifeBuoy,
+  MapPin,
+  Settings,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
+
+const timeSlots = [
+  { label: "1 Hour", detail: "Perfect for small meals" },
+  { label: "2 Hours", detail: "For larger meals" },
+];
+
+const steps: { icon: LucideIcon; title: string; detail: string }[] = [
+  { icon: CalendarDays, title: "Choose date & time", detail: "Pick a convenient slot" },
+  { icon: UserRound, title: "We assign a cook", detail: "A verified cook comes to your home" },
+  { icon: CookingPot, title: "Enjoy home-cooked meals", detail: "Fresh, tasty and hassle-free" },
+];
 
 export default function Home() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("Home");
+  const [selectedTime, setSelectedTime] = useState("1 Hour");
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState("");
+
+  function bookCook() {
+    router.push(`/book?duration=${encodeURIComponent(selectedTime)}`);
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="app-background">
+      <main className="app-shell">
+        <header className="topbar">
+          <div className="brand-lockup" aria-label="Vantavaru home">
+            <div className="brand-mark" aria-hidden="true"><House /><Heart className="brand-heart" /></div>
+            <div><div className="brand-name">Vantavaru</div><div className="brand-tagline">Home Cooked. For Your Home.</div></div>
+          </div>
+          <button className="profile-button" aria-label="Open profile"><UserRound /></button>
+        </header>
+
+        <button className={`location-bar ${locationOpen ? "location-bar-open" : ""}`} onClick={() => setLocationOpen(!locationOpen)} aria-expanded={locationOpen}>
+          <MapPin className="location-icon" aria-hidden="true" /><span>{locationOpen ? "Choose your neighbourhood" : "Hitech City, Hyderabad"}</span>{locationOpen ? <ChevronDown className="location-arrow location-arrow-open" aria-hidden="true" /> : <ChevronRight className="location-arrow" aria-hidden="true" />}
+        </button>
+
+        <section className="hero-panel">
+          <div className="hero-copy">
+            <p className="eyebrow">COOKING, MADE PERSONAL</p>
+            <h1>Delicious<br />home-cooked meals<br />at your doorstep</h1>
+            <p className="hero-description">Book a professional cook for<br className="desktop-break" /> fresh, healthy and homemade meals.</p>
+            <button className="primary-button" onClick={bookCook}>Book a Cook <span>→</span></button>
+          </div>
+          <div className="hero-image" role="img" aria-label="A cook preparing a fresh meal"><div className="trust-list"><div><Leaf aria-hidden="true" /> Fresh ingredients</div><div><Heart aria-hidden="true" /> Hygienic cooking</div><div><UsersRound aria-hidden="true" /> Trusted cooks</div></div></div>
+        </section>
+
+        <section className="section-block time-section">
+          <div className="section-heading"><h2>Choose your cooking time</h2></div>
+          <div className="time-grid">{timeSlots.map((slot) => <button key={slot.label} className={`time-card ${selectedTime === slot.label ? "time-card-selected" : ""}`} onClick={() => setSelectedTime(slot.label)}><span className="clock-icon"><Clock3 aria-hidden="true" /></span><span className="time-copy"><strong>{slot.label}</strong><small>{slot.detail}</small></span><ChevronRight className="card-arrow" aria-hidden="true" /></button>)}</div>
+          {bookingMessage && <p className="booking-message" role="status">{bookingMessage}</p>}
+        </section>
+
+        <section className="section-block how-section">
+          <div className="section-heading"><h2>How it works</h2><button className="text-link">See all <ChevronRight aria-hidden="true" /></button></div>
+          <div className="steps-grid">{steps.map((step, index) => { const StepIcon = step.icon; return <div className="step" key={step.title}><div className={`step-icon step-icon-${index}`}><StepIcon aria-hidden="true" /><b>{index + 1}</b></div><h3>{step.title}</h3><p>{step.detail}</p></div>; })}</div>
+        </section>
+
+        <section className="section-block booking-section">
+          <div className="section-heading"><h2>Upcoming Booking</h2><button className="text-link">View all <ChevronRight aria-hidden="true" /></button></div>
+          <article className="booking-card"><div className="booking-summary"><div className="date-icon"><CalendarDays aria-hidden="true" /></div><div><strong>Sat, 16 Nov 2024</strong><p>10:00 AM – 12:00 PM</p></div><span className="confirmed-pill">Confirmed</span></div><div className="cook-summary"><div className="cook-avatar">PS</div><div><strong>Priya S.</strong><p><span className="star">★</span> 4.8</p></div></div><div className="booking-actions"><button className="secondary-button">View Details</button><button className="green-button">Reschedule</button></div></article>
+        </section>
+
+        <nav className="bottom-nav" aria-label="Main navigation">{[{ label: "Home", icon: House }, { label: "My Bookings", icon: CalendarDays }, { label: "Support", icon: LifeBuoy }, { label: "Settings", icon: Settings }].map((item) => { const NavIcon = item.icon; return <button key={item.label} className={activeTab === item.label ? "nav-item active" : "nav-item"} onClick={() => setActiveTab(item.label)}><NavIcon aria-hidden="true" /><small>{item.label}</small></button>; })}</nav>
       </main>
     </div>
   );
