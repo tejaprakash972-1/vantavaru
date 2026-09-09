@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import {
   House,
   Leaf,
   LifeBuoy,
+  LoaderCircle,
   MapPin,
   Settings,
   UserRound,
@@ -36,8 +37,14 @@ export default function Home() {
   const [selectedTime, setSelectedTime] = useState("1 Hour");
   const [locationOpen, setLocationOpen] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  useEffect(() => {
+    router.prefetch(`/book?duration=${encodeURIComponent(selectedTime)}`);
+  }, [router, selectedTime]);
 
   function bookCook() {
+    setIsNavigating(true);
     router.push(`/book?duration=${encodeURIComponent(selectedTime)}`);
   }
 
@@ -61,9 +68,8 @@ export default function Home() {
             <p className="eyebrow">COOKING, MADE PERSONAL</p>
             <h1>Delicious<br />home-cooked meals<br />at your doorstep</h1>
             <p className="hero-description">Book a professional cook for<br className="desktop-break" /> fresh, healthy and homemade meals.</p>
-            <button className="primary-button" onClick={bookCook}>Book a Cook <span>→</span></button>
+            <button className="primary-button" onClick={bookCook} disabled={isNavigating}>{isNavigating ? <><LoaderCircle className="button-spinner" aria-hidden="true" /> Opening booking</> : <>Book a Cook</>}</button>
           </div>
-          <div className="hero-image" role="img" aria-label="A cook preparing a fresh meal"><div className="trust-list"><div><Leaf aria-hidden="true" /> Fresh ingredients</div><div><Heart aria-hidden="true" /> Hygienic cooking</div><div><UsersRound aria-hidden="true" /> Trusted cooks</div></div></div>
         </section>
 
         <section className="section-block time-section">
@@ -84,6 +90,7 @@ export default function Home() {
 
         <nav className="bottom-nav" aria-label="Main navigation">{[{ label: "Home", icon: House }, { label: "My Bookings", icon: CalendarDays }, { label: "Support", icon: LifeBuoy }, { label: "Settings", icon: Settings }].map((item) => { const NavIcon = item.icon; return <button key={item.label} className={activeTab === item.label ? "nav-item active" : "nav-item"} onClick={() => setActiveTab(item.label)}><NavIcon aria-hidden="true" /><small>{item.label}</small></button>; })}</nav>
       </main>
+      {isNavigating && <div className="navigation-overlay" role="status" aria-live="polite"><div className="navigation-card"><LoaderCircle className="navigation-spinner" aria-hidden="true" /><span>Preparing your booking</span></div></div>}
     </div>
   );
 }

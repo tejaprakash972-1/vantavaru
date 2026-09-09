@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { IngredientsPanel } from "../../components/IngredientsPanel";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,6 +12,7 @@ import {
   Clock3,
   FileText,
   Moon,
+  ShoppingBasket,
   Sun,
   Sunrise,
   UsersRound,
@@ -36,6 +38,7 @@ export default function BookPage() {
 
 function BookPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialDuration = searchParams.get("duration") === "2 Hours" ? "2 Hours" : "1 Hour";
   const [duration, setDuration] = useState(initialDuration);
   const [bookingDate, setBookingDate] = useState("2026-09-16");
@@ -49,7 +52,7 @@ function BookPageContent() {
   });
   const [expandedMeals, setExpandedMeals] = useState<MealKey[]>(["Breakfast", "Lunch", "Dinner"]);
   const [notes, setNotes] = useState("");
-  const [reviewMessage, setReviewMessage] = useState("");
+  const [ingredientsOpen, setIngredientsOpen] = useState(false);
 
   const price = useMemo(() => {
     const mealCount = selectedMeals.length;
@@ -69,6 +72,20 @@ function BookPageContent() {
 
   function toggleExpanded(meal: MealKey) {
     setExpandedMeals((current) => current.includes(meal) ? current.filter((item) => item !== meal) : [...current, meal]);
+  }
+
+  function continueToReview() {
+    const params = new URLSearchParams({
+      date: bookingDate,
+      time: bookingTime,
+      duration,
+      people: String(people),
+      meals: selectedMeals.join(","),
+      dishes: JSON.stringify(selectedDishes),
+      notes,
+      price: String(price),
+    });
+    router.push(`/reviewBooking?${params.toString()}`);
   }
 
   return (
@@ -110,10 +127,13 @@ function BookPageContent() {
             <StepNumber number={6} />
             <div className="form-content"><h2>Additional notes <small>(optional)</small></h2><label className="notes-field"><FileText /><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Any special requests, dietary preferences, or other notes..." rows={1} /></label></div>
           </section>
+
+          <button className="view-ingredients-button" onClick={() => setIngredientsOpen(true)}><span><ShoppingBasket /></span><div><strong>View Ingredients</strong><small>See ingredients for your selected dishes</small></div><ArrowRight /></button>
         </div>
 
-        <footer className="review-bar"><div className="price-display"><span>Estimated Price</span><strong>₹{price}</strong><i>i</i></div><button className="review-button" onClick={() => setReviewMessage("Your booking details are ready for review.")}>Continue to Review <ArrowRight /></button>{reviewMessage && <p className="review-message" role="status">{reviewMessage}</p>}</footer>
+        <footer className="review-bar"><div className="price-display"><span>Estimated Price</span><strong>₹{price}</strong><i>i</i></div><button className="review-button" onClick={continueToReview}>Continue to Review <ArrowRight /></button></footer>
       </main>
+      <IngredientsPanel people={people} selectedMeals={selectedMeals} selectedDishes={selectedDishes} open={ingredientsOpen} onClose={() => setIngredientsOpen(false)} />
     </div>
   );
 }
