@@ -54,7 +54,7 @@ export default function RegisterCookPage() {
                 {["Basic Details", "Address", "Documents", "Review"].map((label, index) => <div className={index <= step - 1 ? "progress-step active" : "progress-step"} key={label}><span>{index < step - 1 ? "✓" : index + 1}</span><strong>{label}</strong></div>)}
             </nav>
 
-            <form className="cook-form" onSubmit={(event) => { event.preventDefault(); if (step < 4) setStep((current) => current + 1); else setSaved(true); }}>
+            <form className="cook-form" onSubmit={(event) => { event.preventDefault(); if (step < 4) setStep((current) => current + 1); else router.push("/cook-home"); }}>
                 {step === 1 ? <>
                     <div className="cook-section-heading"><h2>Basic Details</h2><span>Step 1 of 4</span></div>
 

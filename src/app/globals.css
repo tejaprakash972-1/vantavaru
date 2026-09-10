@@ -33,6 +33,10 @@ body {
   margin: 0;
 }
 
+body:has(.booking-request-page) {
+  background: #fff;
+}
+
 button {
   font: inherit;
   cursor: pointer;
@@ -623,21 +627,23 @@ h1 {
 
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100% - 48px), 1160px);
+  inset: auto 0 0;
+  margin-inline: auto;
+  width: min(calc(100% - 48px), 760px);
   background: #fffffff5;
   border: 1px solid #e7e9e7;
   border-bottom: 0;
   border-radius: 23px 23px 0 0;
   min-height: 76px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--nav-columns, 4), minmax(0, 1fr));
   padding: 8px 6px max(8px, env(safe-area-inset-bottom));
   backdrop-filter: blur(12px);
-  z-index: 4;
+  z-index: 50;
   box-shadow: 0 -5px 18px #203b2c0d;
+  transform: none;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .nav-item {
@@ -5042,62 +5048,6 @@ h1 {
   font-size: 14px;
 }
 
-.bookings-bottom-nav {
-  position: fixed;
-  z-index: 5;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: min(100%, 760px);
-  min-height: 83px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
-  border-top: 1px solid #e5ebef;
-  background: #fffffff2;
-  box-shadow: 0 -5px 18px #203b2c0d;
-  backdrop-filter: blur(10px);
-}
-
-.bookings-bottom-nav button {
-  border: 0;
-  background: transparent;
-  color: #30425a;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 24px;
-}
-
-.bookings-bottom-nav button svg {
-  width: 26px;
-  height: 26px;
-  stroke-width: 1.8;
-}
-
-.bookings-bottom-nav small {
-  font-size: 13px;
-}
-
-.bookings-bottom-nav button.active {
-  color: var(--green);
-  font-weight: 700;
-}
-
-.bookings-bottom-nav button.active svg {
-  padding: 7px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #e3f5ea;
-}
-
-.bookings-bottom-nav-three {
-  grid-template-columns: repeat(3, 1fr);
-}
-
 @media (max-width: 700px) {
   .bookings-page {
     padding: 12px 34px 104px;
@@ -5192,22 +5142,6 @@ h1 {
     font-size: 14px;
   }
 
-  .bookings-bottom-nav {
-    min-height: 76px;
-  }
-
-  .bookings-bottom-nav button {
-    font-size: 21px;
-  }
-
-  .bookings-bottom-nav button svg {
-    width: 23px;
-    height: 23px;
-  }
-
-  .bookings-bottom-nav small {
-    font-size: 11px;
-  }
 }
 
 @media (max-width: 450px) {
@@ -5287,4 +5221,1354 @@ h1 {
     font-size: 12px;
     min-height: 40px;
   }
+}
+
+.cook-home-page {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 34px 105px;
+  color: #142338;
+  background: #fff;
+  animation: page-enter .34s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.cook-home-header {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cook-home-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--green);
+  font-size: 21px;
+}
+
+.cook-home-mark {
+  width: 39px;
+  height: 39px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.cook-home-mark svg {
+  width: 38px;
+  height: 38px;
+  stroke-width: 2.5;
+}
+
+.cook-home-mark span {
+  position: absolute;
+  left: 14px;
+  top: 11px;
+  color: var(--orange);
+  font-size: 12px;
+}
+
+.cook-notification {
+  width: 39px;
+  height: 39px;
+  border: 0;
+  background: transparent;
+  color: #142338;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.cook-notification svg {
+  width: 25px;
+  height: 25px;
+}
+
+.cook-notification i {
+  width: 7px;
+  height: 7px;
+  position: absolute;
+  top: 6px;
+  right: 5px;
+  border-radius: 50%;
+  background: #ed3c42;
+}
+
+.cook-welcome {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.cook-welcome h1 {
+  font-size: 26px;
+  letter-spacing: -.7px;
+  color: #142338;
+}
+
+.cook-welcome p {
+  color: #718197;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.cook-availability {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 11px;
+  border: 1px solid #e1e7ec;
+  border-radius: 9px;
+  background: #f8fafb;
+}
+
+.cook-availability.online {
+  border-color: #bfe8cf;
+  background: #f0fbf4;
+}
+
+.cook-availability-copy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.cook-availability-copy>div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cook-availability-copy strong {
+  color: #142338;
+  font-size: 12px;
+}
+
+.cook-availability-copy small {
+  overflow: hidden;
+  color: #718197;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cook-availability-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #9aa7b4;
+  box-shadow: 0 0 0 3px #e8edf1;
+}
+
+.cook-availability.online .cook-availability-dot {
+  background: #12a150;
+  box-shadow: 0 0 0 3px #d8f2e1;
+}
+
+.cook-online-button {
+  min-height: 31px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--green);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cook-availability.offline .cook-online-button {
+  background: var(--green);
+}
+
+.cook-availability.online .cook-online-button {
+  color: #176d48;
+  background: #dff4e8;
+}
+
+.cook-availability-toggle {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.cook-availability-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.cook-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #c9d2db;
+  transition: background-color .2s ease;
+}
+
+.cook-toggle-track i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #14233833;
+  transition: transform .2s ease;
+}
+
+.cook-availability-toggle input:checked+.cook-toggle-track {
+  background: var(--green);
+}
+
+.cook-availability-toggle input:checked+.cook-toggle-track i {
+  transform: translateX(18px);
+}
+
+.cook-availability-toggle input:focus-visible+.cook-toggle-track {
+  outline: 3px solid #9dd4b4;
+  outline-offset: 3px;
+}
+
+.approval-pill {
+  min-width: 106px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 12px;
+  padding: 8px;
+  color: #187c4d;
+  background: #eaf8ef;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.approval-pill svg {
+  width: 17px;
+  height: 17px;
+}
+
+.approval-pill small {
+  width: 100%;
+  color: #718b7c;
+  font-size: 9px;
+  font-weight: 400;
+  text-align: center;
+}
+
+.earnings-card {
+  margin-top: 20px;
+  padding: 16px 18px 15px;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #087d47, #006b3a);
+  box-shadow: 0 8px 16px #08783f22;
+}
+
+.earnings-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.earnings-heading button {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 9px;
+  color: #fff;
+  background: #ffffff1c;
+  font-size: 11px;
+}
+
+.earnings-heading button svg {
+  width: 13px;
+  height: 13px;
+  vertical-align: -3px;
+  transform: rotate(90deg);
+}
+
+.earnings-card>strong {
+  display: block;
+  font-size: 29px;
+  margin: 7px 0 14px;
+}
+
+.earnings-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.earnings-stats span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid #ffffff3d;
+  padding-left: 12px;
+  font-size: 10px;
+  color: #d5f1df;
+}
+
+.earnings-stats span:first-child {
+  padding-left: 0;
+}
+
+.earnings-stats span:last-child {
+  border-right: 0;
+}
+
+.earnings-stats b {
+  color: #fff;
+  font-size: 14px;
+}
+
+.cook-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cook-stat-card {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 9px;
+  padding: 9px;
+  text-align: left;
+  background: #f1faf5;
+  color: #142338;
+}
+
+.cook-stat-card.blue {
+  background: #f1f6ff;
+}
+
+.cook-stat-card>span {
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--green);
+  background: #ddf2e6;
+}
+
+.cook-stat-card.blue>span {
+  color: #2876db;
+  background: #deebff;
+}
+
+.cook-stat-card svg {
+  width: 21px;
+  height: 21px;
+}
+
+.cook-stat-card>div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.cook-stat-card small {
+  color: #718197;
+  font-size: 10px;
+}
+
+.cook-stat-card strong {
+  font-size: 20px;
+}
+
+.cook-stat-card>svg {
+  width: 17px;
+  color: #60728a;
+}
+
+.cook-section {
+  margin-top: 25px;
+}
+
+.cook-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cook-section-title h2 {
+  font-size: 16px;
+  color: #142338;
+}
+
+.cook-section-title button {
+  border: 0;
+  background: transparent;
+  color: #176d48;
+  font-size: 11px;
+  display: flex;
+}
+
+.cook-section-title button svg {
+  width: 14px;
+  height: 14px;
+  vertical-align: -3px;
+}
+
+.cook-booking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cook-booking-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 16px;
+  gap: 10px;
+  padding: 12px 10px;
+  border: 1px solid #dfe6ed;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.cook-date-box {
+  width: 43px;
+  height: 51px;
+  border-radius: 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f2f5f9;
+  color: #142338;
+}
+
+.cook-date-box strong {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.cook-date-box span {
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.cook-booking-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #718197;
+  font-size: 10px;
+}
+
+.cook-booking-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.cook-booking-title>strong {
+  color: #142338;
+  font-size: 14px;
+}
+
+.cook-booking-title>span {
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 9px;
+}
+
+.cook-booking-title .pending {
+  color: #b36a00;
+  background: #fff2cf;
+}
+
+.cook-booking-title .confirmed {
+  color: #14784a;
+  background: #e1f5e8;
+}
+
+.cook-booking-main>span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cook-booking-main svg {
+  width: 13px;
+  height: 13px;
+  color: #58718e;
+}
+
+.cook-card-arrow {
+  width: 16px;
+  height: 16px;
+  color: #536a83;
+  align-self: center;
+}
+
+.cook-booking-actions {
+  grid-column: 2 / -1;
+  display: flex;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.cook-booking-actions button {
+  flex: 1;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cook-booking-actions button svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.cook-reject {
+  border: 1px solid #ed4949;
+  color: #d63a40;
+  background: #fff;
+}
+
+.cook-accept {
+  border: 0;
+  color: #fff;
+  background: var(--green);
+}
+
+.recent-section {
+  margin-top: 21px;
+}
+
+.recent-earning {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #e0e6ec;
+  border-radius: 8px;
+  color: #667990;
+  font-size: 10px;
+}
+
+.recent-earning strong {
+  color: #142338;
+  font-size: 12px;
+}
+
+.recent-earning small {
+  border-radius: 5px;
+  padding: 4px 5px;
+  color: #19764a;
+  background: #e2f5e9;
+  font-size: 8px;
+}
+
+.cook-notice {
+  position: fixed;
+  z-index: 8;
+  left: 50%;
+  top: max(16px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  border-radius: 99px;
+  padding: 9px 14px;
+  color: #fff;
+  background: #142338e8;
+  font-size: 12px;
+  animation: lift-in .2s ease-out both;
+}
+
+@media (max-width: 700px) {
+  .cook-home-page {
+    width: 100%;
+    padding: 11px 32px 98px;
+  }
+
+  .cook-welcome {
+    margin-top: 18px;
+  }
+
+  .cook-welcome h1 {
+    font-size: 23px;
+  }
+
+  .cook-availability {
+    margin-top: 12px;
+  }
+
+  .approval-pill {
+    min-width: 99px;
+  }
+
+  .earnings-card {
+    margin-top: 17px;
+  }
+
+  .cook-section {
+    margin-top: 22px;
+  }
+
+}
+
+@media (max-width: 450px) {
+  .cook-home-page {
+    padding-inline: 24px;
+  }
+
+  .cook-home-brand {
+    font-size: 20px;
+  }
+
+  .cook-welcome h1 {
+    font-size: 21px;
+  }
+
+  .cook-welcome p {
+    font-size: 11px;
+  }
+
+  .approval-pill {
+    min-width: 94px;
+    font-size: 11px;
+  }
+
+  .earnings-card {
+    padding: 14px;
+  }
+
+  .earnings-card>strong {
+    font-size: 27px;
+  }
+
+  .earnings-stats span {
+    font-size: 8px;
+    padding-left: 7px;
+  }
+
+  .earnings-stats b {
+    font-size: 12px;
+  }
+
+  .cook-stat-card {
+    padding: 7px;
+  }
+
+  .cook-stat-card small {
+    font-size: 9px;
+  }
+
+  .cook-stat-card strong {
+    font-size: 18px;
+  }
+
+  .cook-booking-card {
+    grid-template-columns: 48px minmax(0, 1fr) 14px;
+    padding: 10px 8px;
+  }
+
+  .cook-date-box {
+    width: 45px;
+  }
+
+  .cook-booking-title>strong {
+    font-size: 13px;
+  }
+
+  .cook-booking-main {
+    font-size: 9px;
+  }
+
+  .recent-earning {
+    grid-template-columns: 1fr 1.2fr auto;
+  }
+
+  .recent-earning small {
+    grid-column: 3;
+  }
+
+  .cook-notice {
+    top: max(16px, env(safe-area-inset-top));
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 700px) {
+  .cook-home-page {
+    padding-bottom: 112px;
+  }
+}
+
+.cook-profile-page {
+  min-height: 100svh;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 24px 28px;
+  color: #142338;
+  background: #fff;
+}
+
+.cook-profile-header {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 42px 1fr 70px;
+  align-items: center;
+  gap: 8px;
+}
+
+.cook-profile-back,
+.cook-profile-edit {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.cook-profile-back {
+  justify-content: flex-start;
+  color: #142338;
+}
+
+.cook-profile-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.cook-profile-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--green);
+  font-size: 20px;
+}
+
+.cook-profile-brand-mark {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--green);
+}
+
+.cook-profile-brand-mark svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cook-profile-edit,
+.cook-profile-section-action {
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cook-profile-edit svg,
+.cook-profile-section-action svg {
+  width: 17px;
+  height: 17px;
+}
+
+.cook-profile-intro {
+  margin: 18px 0 20px;
+}
+
+.cook-profile-intro h1 {
+  color: #142338;
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.cook-profile-intro p {
+  margin-top: 6px;
+  color: #637795;
+  font-size: 14px;
+}
+
+.profile-approved-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #eefaf4;
+}
+
+.profile-approved-banner>span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--green);
+}
+
+.profile-approved-banner>span svg {
+  width: 22px;
+  height: 22px;
+}
+
+.profile-approved-banner div {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-approved-banner strong {
+  display: block;
+  color: #142338;
+  font-size: 16px;
+}
+
+.profile-approved-banner p {
+  margin-top: 3px;
+  color: #24724f;
+  font-size: 12px;
+}
+
+.profile-approved-banner b {
+  padding: 8px 10px;
+  border-radius: 7px;
+  color: #08783f;
+  background: #dff4e8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.cook-profile-section {
+  overflow: hidden;
+  margin-top: 14px;
+  border: 1px solid #e0e7ed;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.cook-profile-section>header {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #f3fbf7;
+}
+
+.cook-profile-section-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--green);
+  background: #dff4e8;
+}
+
+.cook-profile-section-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.cook-profile-section h2 {
+  flex: 1;
+  color: #142338;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.cook-profile-section-action {
+  padding: 6px 0 6px 8px;
+}
+
+.cook-profile-section-body {
+  padding: 14px 16px 16px;
+}
+
+.cook-profile-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.cook-profile-rows>div {
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.cook-profile-rows dt,
+.cook-profile-rows dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cook-profile-rows dt {
+  color: #637795;
+}
+
+.cook-profile-rows dd {
+  color: #142338;
+}
+
+.cook-profile-logout {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 18px;
+  border: 1px solid #ed4949;
+  border-radius: 9px;
+  color: #d63a40;
+  background: #fff8f8;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cook-profile-logout svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 520px) {
+  .cook-profile-page {
+    padding: 10px 12px 24px;
+  }
+
+  .cook-profile-header {
+    grid-template-columns: 36px 1fr 58px;
+  }
+
+  .cook-profile-brand {
+    font-size: 18px;
+  }
+
+  .cook-profile-brand-mark {
+    width: 29px;
+    height: 29px;
+  }
+
+  .cook-profile-edit {
+    font-size: 13px;
+  }
+
+  .cook-profile-intro {
+    margin-top: 14px;
+  }
+
+  .cook-profile-intro h1 {
+    font-size: 28px;
+  }
+
+  .cook-profile-intro p {
+    font-size: 13px;
+  }
+
+  .profile-approved-banner {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .profile-approved-banner p {
+    line-height: 1.35;
+  }
+
+  .profile-approved-banner b {
+    font-size: 11px;
+  }
+
+  .cook-profile-section>header {
+    min-height: 54px;
+    padding: 7px 10px;
+    gap: 9px;
+  }
+
+  .cook-profile-section-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .cook-profile-section h2 {
+    font-size: 15px;
+  }
+
+  .cook-profile-section-action {
+    font-size: 12px;
+    display: flex;
+  }
+
+  .cook-profile-section-body {
+    padding: 12px 12px 14px;
+  }
+
+  .cook-profile-rows {
+    gap: 7px;
+  }
+
+  .cook-profile-rows>div {
+    grid-template-columns: 39% minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .cook-profile-rows dt,
+  .cook-profile-rows dd {
+    font-size: 11px;
+  }
+}
+
+.booking-request-page {
+  min-height: 100svh;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  padding: 10px 24px max(24px, env(safe-area-inset-bottom));
+  color: #142338;
+  background: #fff;
+}
+
+.booking-request-header {
+  min-height: 29px;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  gap: 8px;
+}
+
+.booking-request-header h1 {
+  margin: 0;
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.booking-request-back {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: #142338;
+  background: transparent;
+}
+
+.booking-request-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.request-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 11px;
+  padding: 10px 13px;
+  border-radius: 8px;
+  color: #955500;
+  background: #fff6e4;
+}
+
+.request-alert>svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: #d98b00;
+}
+
+.request-alert div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.request-alert strong,
+.request-alert span {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.request-alert span {
+  color: #66707c;
+}
+
+.request-summary {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  margin-top: 12px;
+  padding: 12px 11px 13px;
+  border: 1px solid #e3e8ed;
+  border-radius: 8px;
+}
+
+.request-date-box {
+  width: 50px;
+  min-height: 59px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: #142338;
+  background: #f2f5f9;
+}
+
+.request-date-box strong {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.request-date-box span,
+.request-date-box small {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.request-summary-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #647792;
+  font-size: 11px;
+}
+
+.request-summary-main>span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.request-summary-main svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.request-summary-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.request-summary-title strong {
+  color: #142338;
+  font-size: 14px;
+}
+
+.request-summary-title span {
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: #b36a00;
+  background: #fff2cf;
+  font-size: 10px;
+}
+
+.request-map-link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  color: #08783f;
+  background: transparent;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.request-map-link svg {
+  display: none;
+}
+
+.request-detail-panel {
+  min-width: 0;
+  margin-top: 12px;
+  padding: 14px 12px 15px;
+  border: 1px solid #e3e8ed;
+  border-radius: 8px;
+}
+
+.request-detail-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 13px;
+  color: #142338;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.request-detail-panel h2>svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+}
+
+.request-detail-panel dl {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+}
+
+.request-detail-panel dl>div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.request-detail-panel dt,
+.request-detail-panel dd {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.request-detail-panel dt {
+  color: #718197;
+}
+
+.request-detail-panel dd {
+  color: #142338;
+}
+
+.request-detail-panel dd a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.request-earnings-panel h2 {
+  margin-bottom: 11px;
+}
+
+.request-rupee {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #53647d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.request-amount {
+  font-size: 14px !important;
+  font-weight: 700;
+}
+
+.booking-request-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 32px;
+}
+
+.booking-request-actions button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.booking-request-actions button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.request-reject {
+  border: 1px solid #ed4949;
+  color: #d63a40;
+  background: #fff;
+}
+
+.request-accept {
+  border: 1px solid var(--green);
+  color: #fff;
+  background: var(--green);
+}
+
+.request-status {
+  margin: 12px 0 0;
+  color: #176d48;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 450px) {
+  .booking-request-page {
+    padding: 10px 10px max(24px, env(safe-area-inset-bottom));
+  }
+
+  .request-summary {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .request-map-link {
+    grid-column: 2;
+    justify-self: end;
+    margin-top: -2px;
+  }
+
 }

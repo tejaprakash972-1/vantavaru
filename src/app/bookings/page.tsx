@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import BottomNav from "@/components/BottomNav";
 import {
     CalendarDays,
     Clock3,
@@ -41,6 +42,7 @@ export default function BookingsPage() {
     const visibleBookings = bookings.filter((booking) => booking.status === tab && !cancelled.includes(booking.id));
 
     return (
+        <>
         <main className="bookings-page">
             <header className="bookings-header">
                 <div className="bookings-brand"><div className="bookings-brand-mark"><House /><span>♥</span></div><strong>Vantavaru</strong></div>
@@ -54,10 +56,14 @@ export default function BookingsPage() {
                 {visibleBookings.length === 0 ? <div className="empty-bookings"><CalendarDays /><strong>No {tab} bookings</strong><span>Your meal bookings will appear here.</span></div> : visibleBookings.map((booking) => <BookingCard key={booking.id} booking={booking} onCancel={() => setCancelled((current) => [...current, booking.id])} />)}
             </section>
 
-            <nav className="bottom-nav" aria-label="Main navigation">
-                {[{ label: "Home", icon: House }, { label: "My Bookings", icon: CalendarDays }, { label: "Settings", icon: Settings }].map((item) => { const NavIcon = item.icon; return <button key={item.label} className={activeNav === item.label ? "nav-item active" : "nav-item"} onClick={() => { setActiveNav(item.label); if (item.label === "Home") router.push("/"); }}><NavIcon aria-hidden="true" /><small>{item.label}</small></button>; })}
-            </nav>
         </main>
+
+        <BottomNav
+            items={[{ label: "Home", icon: House }, { label: "My Bookings", icon: CalendarDays }, { label: "Settings", icon: Settings }]}
+            activeLabel={activeNav}
+            onSelect={(label) => { setActiveNav(label); if (label === "Home") router.push("/"); }}
+        />
+        </>
     );
 }
 
