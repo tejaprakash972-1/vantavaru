@@ -77,7 +77,7 @@ export default function CookProfilePage() {
         <ProfileRows rows={[["Identity Proof (Aadhaar)", "Uploaded"], ["PAN Card", "Uploaded"], ["Profile Photo", "Uploaded"]]} />
       </ProfileSection>
 
-      <button className="cook-profile-logout"><LogOut /> Logout</button>
+      <button className="cook-profile-logout" onClick={() => router.replace("/logout")}><LogOut /> Logout</button>
     </main>
   );
 }

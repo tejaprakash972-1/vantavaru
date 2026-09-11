@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ComponentType, type MouseEvent, type ReactNode } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
     ArrowLeft,
     ArrowRight,
@@ -27,8 +28,17 @@ import {
 const cuisines = ["South Indian", "North Indian", "Chinese", "Continental", "Baking"];
 const languages = ["English", "Hindi", "Telugu", "Tamil", "Kannada"];
 
+type CookDocuments = {
+    profile: File | null;
+    aadhaarFront: File | null;
+    aadhaarBack: File | null;
+    additional: File | null;
+};
+
 export default function RegisterCookPage() {
     const router = useRouter();
+    const [fullName, setFullName] = useState("");
+    const [dateOfBirth, setDateOfBirth] = useState("");
     const [cuisinesSelected, setCuisinesSelected] = useState<string[]>([]);
     const [languagesSelected, setLanguagesSelected] = useState<string[]>([]);
     const [experience, setExperience] = useState("");
@@ -38,7 +48,109 @@ export default function RegisterCookPage() {
     const [saved, setSaved] = useState(false);
     const [step, setStep] = useState(1);
     const [address, setAddress] = useState({ house: "", street: "", city: "", pincode: "", landmark: "" });
-    const [documents, setDocuments] = useState({ profile: "", aadhaarFront: "", aadhaarBack: "", additional: "" });
+    const [documents, setDocuments] = useState<CookDocuments>({ profile: null, aadhaarFront: null, aadhaarBack: null, additional: null });
+    const [submitError, setSubmitError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setSubmitError("");
+
+        if (step < 4) {
+            setSaved(true);
+            setStep((current) => current + 1);
+            return;
+        }
+
+        const supabase = getSupabaseBrowserClient();
+        if (!supabase) {
+            setSubmitError("Connect Supabase before submitting your application.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+            setSubmitError(userError?.message || "Your session has expired. Please log in again.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        const phone = user.phone || `+91${phoneNumber}`;
+        const { error: profileError } = await supabase.from("profiles").upsert({
+            id: user.id,
+            full_name: fullName,
+            phone,
+            role: "cook",
+        }, { onConflict: "id" });
+
+        if (profileError) {
+            setSubmitError(profileError.message);
+            setIsSubmitting(false);
+            return;
+        }
+
+        const { data: cookProfile, error: cookProfileError } = await supabase.from("cook_profiles").upsert({
+            user_id: user.id,
+            full_name: fullName,
+            date_of_birth: dateOfBirth || null,
+            gender,
+            cooking_experience: experience,
+            cuisines: cuisinesSelected,
+            languages: languagesSelected,
+            house_flat_no: address.house,
+            street_area: address.street,
+            city: address.city,
+            pincode: address.pincode,
+            landmark: address.landmark || null,
+            service_radius_km: 5,
+            status: "pending",
+            submitted_at: new Date().toISOString(),
+        }, { onConflict: "user_id" }).select("id").single();
+
+        if (cookProfileError || !cookProfile) {
+            setSubmitError(cookProfileError?.message || "Unable to save your cook profile.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        const filesToUpload = [
+            documents.profile && { type: "profile_photo", file: documents.profile },
+            documents.aadhaarFront && { type: "aadhaar_front", file: documents.aadhaarFront },
+            documents.aadhaarBack && { type: "aadhaar_back", file: documents.aadhaarBack },
+            documents.additional && { type: "other", file: documents.additional },
+        ].filter((item): item is { type: string; file: File } => Boolean(item));
+        const documentRows: { cook_id: string; document_type: string; file_path: string; status: string }[] = [];
+
+        for (const item of filesToUpload) {
+            const safeFileName = item.file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+            const filePath = `${user.id}/${cookProfile.id}/${item.type}/${crypto.randomUUID()}-${safeFileName}`;
+            const { data: uploadedFile, error: uploadError } = await supabase.storage.from("cookDocuments").upload(filePath, item.file, {
+                contentType: item.file.type,
+                upsert: false,
+            });
+
+            if (uploadError || !uploadedFile) {
+                setSubmitError(uploadError?.message || `Unable to upload ${item.file.name}.`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            documentRows.push({ cook_id: cookProfile.id, document_type: item.type, file_path: uploadedFile.path, status: "pending" });
+        }
+
+        if (documentRows.length) {
+            const { error: documentsError } = await supabase.from("cook_documents").insert(documentRows);
+            if (documentsError) {
+                setSubmitError(documentsError.message);
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
+        await supabase.auth.updateUser({ data: { role: "cook" } });
+        router.replace("/cook-home");
+    }
 
     return (
         <main className="cook-register-page">
@@ -54,13 +166,13 @@ export default function RegisterCookPage() {
                 {["Basic Details", "Address", "Documents", "Review"].map((label, index) => <div className={index <= step - 1 ? "progress-step active" : "progress-step"} key={label}><span>{index < step - 1 ? "✓" : index + 1}</span><strong>{label}</strong></div>)}
             </nav>
 
-            <form className="cook-form" onSubmit={(event) => { event.preventDefault(); if (step < 4) setStep((current) => current + 1); else router.push("/cook-home"); }}>
+            <form className="cook-form" onSubmit={handleSubmit}>
                 {step === 1 ? <>
                     <div className="cook-section-heading"><h2>Basic Details</h2><span>Step 1 of 4</span></div>
 
-                    <label className="cook-field-label">Full Name <em>*</em><span className="cook-input"><UserRound /><input required placeholder="Enter your full name" /></span></label>
+                    <label className="cook-field-label">Full Name <em>*</em><span className="cook-input"><UserRound /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Enter your full name" /></span></label>
                     <label className="cook-field-label">Phone Number <em>*</em><span className="cook-input cook-input-muted"><Phone /><span className="phone-prefix">+91</span><input required aria-label="Phone number" type="tel" inputMode="numeric" maxLength={10} pattern="[0-9]{10}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ""))} /></span><small>This will be used for login and communication.</small></label>
-                    <label className="cook-field-label">Date of Birth <em>*</em><span className="cook-input"><CalendarDays /><input required type="date" aria-label="Date of birth" /></span></label>
+                    <label className="cook-field-label">Date of Birth <em>*</em><span className="cook-input"><CalendarDays /><input required type="date" aria-label="Date of birth" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></span></label>
 
                     <fieldset className="gender-field"><legend>Gender <em>*</em></legend><div className="gender-options">{["Female", "Male", "Other"].map((item) => <label key={item}><input type="radio" name="gender" checked={gender === item} onChange={() => setGender(item)} /><span className="radio-dot" />{item}</label>)}</div></fieldset>
 
@@ -75,7 +187,7 @@ export default function RegisterCookPage() {
 
                     <button className="cook-continue-button" type="submit">{saved ? "Details Saved" : "Save & Continue"} <ArrowRight /></button>
                     {saved && <p className="cook-saved-message" role="status">Your basic details are saved. Next: address.</p>}
-                </> : step === 2 ? <AddressStep address={address} setAddress={setAddress} onBack={() => setStep(1)} /> : step === 3 ? <DocumentsStep documents={documents} setDocuments={setDocuments} onBack={() => setStep(2)} saved={saved} /> : <CookReview address={address} documents={documents} cuisines={cuisinesSelected} languages={languagesSelected} onBack={() => setStep(3)} onEdit={(section) => setStep(section)} saved={saved} />}
+                </> : step === 2 ? <AddressStep address={address} setAddress={setAddress} onBack={() => setStep(1)} /> : step === 3 ? <DocumentsStep documents={documents} setDocuments={setDocuments} onBack={() => setStep(2)} saved={saved} /> : <CookReview fullName={fullName} phoneNumber={phoneNumber} dateOfBirth={dateOfBirth} gender={gender} experience={experience} address={address} documents={documents} cuisines={cuisinesSelected} languages={languagesSelected} onBack={() => setStep(3)} onEdit={(section) => setStep(section)} isSubmitting={isSubmitting} submitError={submitError} />}
             </form>
         </main>
     );
@@ -100,28 +212,30 @@ function AddressStep({ address, setAddress, onBack }: { address: { house: string
     </>;
 }
 
-function DocumentsStep({ documents, setDocuments, onBack, saved }: { documents: { profile: string; aadhaarFront: string; aadhaarBack: string; additional: string }; setDocuments: (value: { profile: string; aadhaarFront: string; aadhaarBack: string; additional: string }) => void; onBack: () => void; saved: boolean }) {
-    const updateFile = (key: keyof typeof documents, file: File | undefined) => setDocuments({ ...documents, [key]: file?.name || "" });
+function DocumentsStep({ documents, setDocuments, onBack, saved }: { documents: CookDocuments; setDocuments: (value: CookDocuments) => void; onBack: () => void; saved: boolean }) {
+    const updateFile = (key: keyof CookDocuments, file: File | undefined) => setDocuments({ ...documents, [key]: file || null });
 
     return <>
         <div className="cook-section-heading"><div><h2>Upload Documents</h2><p className="documents-subtitle">These documents help us verify your identity and keep our community safe.</p></div><span>Step 3 of 4</span></div>
-        <DocumentCard title="Profile Photo" description="Upload a clear photo of yourself" required fileName={documents.profile} icon={Camera} accept="image/png,image/jpeg" onChange={(file) => updateFile("profile", file)} tipsTitle="Photo Guidelines" tips={["Your face should be clearly visible", "Use good lighting", "Avoid blurred or cropped photos", "This photo will be visible to customers"]} />
-        <DocumentCard title="Aadhaar Card" description="Upload a clear copy of your Aadhaar card (front and back)" required fileName={documents.aadhaarFront && documents.aadhaarBack ? "2 files selected" : ""} icon={IdCard} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("aadhaarFront", file)} secondaryFileName={documents.aadhaarBack} onSecondaryChange={(file) => updateFile("aadhaarBack", file)} tipsTitle="Aadhaar Guidelines" tips={["Image should be clear and readable", "All corners should be visible", "File size should be less than 5 MB", "We use this only for verification purposes"]} />
-        <DocumentCard title="Additional ID" description="You can upload PAN card, Driving license or Voter ID" fileName={documents.additional} icon={FileText} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("additional", file)} tipsTitle="Accepted Documents" tips={["PAN Card", "Driving License", "Voter ID", "This helps us with additional verification (optional)."]} />
+        <DocumentCard title="Profile Photo" description="Upload a clear photo of yourself" required fileName={documents.profile?.name || ""} icon={Camera} accept="image/png,image/jpeg" onChange={(file) => updateFile("profile", file)} tipsTitle="Photo Guidelines" tips={["Your face should be clearly visible", "Use good lighting", "Avoid blurred or cropped photos", "This photo will be visible to customers"]} />
+        <DocumentCard title="Aadhaar Card" description="Upload a clear copy of your Aadhaar card (front and back)" required fileName={documents.aadhaarFront && documents.aadhaarBack ? "2 files selected" : documents.aadhaarFront?.name || ""} icon={IdCard} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("aadhaarFront", file)} secondaryFileName={documents.aadhaarBack?.name || ""} onSecondaryChange={(file) => updateFile("aadhaarBack", file)} tipsTitle="Aadhaar Guidelines" tips={["Image should be clear and readable", "All corners should be visible", "File size should be less than 5 MB", "We use this only for verification purposes"]} />
+        <DocumentCard title="Additional ID" description="You can upload PAN card, Driving license or Voter ID" fileName={documents.additional?.name || ""} icon={FileText} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("additional", file)} tipsTitle="Accepted Documents" tips={["PAN Card", "Driving License", "Voter ID", "This helps us with additional verification (optional)."]} />
         <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> Back</button><button className="cook-continue-button" type="submit">{saved ? "Documents Saved" : "Save & Continue"} <ArrowRight /></button></div>
     </>;
 }
 
-function CookReview({ address, documents, cuisines, languages, onBack, onEdit, saved }: { address: { house: string; street: string; city: string; pincode: string; landmark: string }; documents: { profile: string; aadhaarFront: string; aadhaarBack: string; additional: string }; cuisines: string[]; languages: string[]; onBack: () => void; onEdit: (section: 1 | 2 | 3) => void; saved: boolean }) {
+function CookReview({ fullName, phoneNumber, dateOfBirth, gender, experience, address, documents, cuisines, languages, onBack, onEdit, isSubmitting, submitError }: { fullName: string; phoneNumber: string; dateOfBirth: string; gender: string; experience: string; address: { house: string; street: string; city: string; pincode: string; landmark: string }; documents: CookDocuments; cuisines: string[]; languages: string[]; onBack: () => void; onEdit: (section: 1 | 2 | 3) => void; isSubmitting: boolean; submitError: string }) {
     const edit = (section: 1 | 2 | 3) => (event: MouseEvent<HTMLButtonElement>) => { event.preventDefault(); onEdit(section); };
     return <>
         <div className="review-step-heading"><div><h2>Review your details</h2><p>Review your details before submitting your application.</p></div><span>Step 4 of 4</span></div>
-        <ReviewSection icon={UserRound} title="Basic Details" onEdit={edit(1)}><ReviewRow label="Name" value="Your full name" /><ReviewRow label="Phone Number" value={`+91 ${"98765 43210"}`} /><ReviewRow label="Date of Birth" value="Not provided" /><ReviewRow label="Gender" value="Female" /><ReviewRow label="Cooking Experience" value="Selected experience" /><ReviewRow label="Cuisines" value={cuisines.length ? cuisines.join(", ") : "Not selected"} /><ReviewRow label="Languages Spoken" value={languages.length ? languages.join(", ") : "Not selected"} /></ReviewSection>
+        <ReviewSection icon={UserRound} title="Basic Details" onEdit={edit(1)}><ReviewRow label="Name" value={fullName || "Not provided"} /><ReviewRow label="Phone Number" value={`+91 ${phoneNumber}`} /><ReviewRow label="Date of Birth" value={dateOfBirth || "Not provided"} /><ReviewRow label="Gender" value={gender} /><ReviewRow label="Cooking Experience" value={experience || "Not selected"} /><ReviewRow label="Cuisines" value={cuisines.length ? cuisines.join(", ") : "Not selected"} /><ReviewRow label="Languages Spoken" value={languages.length ? languages.join(", ") : "Not selected"} /></ReviewSection>
         <ReviewSection icon={MapPin} title="Address" onEdit={edit(2)}><ReviewRow label="House / Flat No." value={address.house || "Not provided"} /><ReviewRow label="Street / Area / Locality" value={address.street || "Not provided"} /><ReviewRow label="City" value={address.city || "Not selected"} /><ReviewRow label="Pincode" value={address.pincode || "Not provided"} /><ReviewRow label="Landmark" value={address.landmark || "Not provided"} /><ReviewRow label="Service Area" value="Within 5 km" /></ReviewSection>
-        <ReviewSection icon={FileText} title="Documents" onEdit={edit(3)}><div className="review-document-grid"><ReviewDocument title="Profile Photo" value={documents.profile || "Not uploaded"} icon={Camera} /><ReviewDocument title="Aadhaar Card" value={documents.aadhaarFront && documents.aadhaarBack ? "Front & Back Uploaded" : "Not uploaded"} icon={IdCard} /><ReviewDocument title="Additional ID" value={documents.additional ? "Uploaded" : "Optional"} icon={FileText} /></div></ReviewSection>
+        <ReviewSection icon={FileText} title="Documents" onEdit={edit(3)}><div className="review-document-grid"><ReviewDocument title="Profile Photo" value={documents.profile?.name || "Not uploaded"} icon={Camera} /><ReviewDocument title="Aadhaar Card" value={documents.aadhaarFront && documents.aadhaarBack ? "Front & Back Uploaded" : "Not uploaded"} icon={IdCard} /><ReviewDocument title="Additional ID" value={documents.additional?.name || "Optional"} icon={FileText} /></div></ReviewSection>
         <div className="review-verification-note"><Info /><span>Your details will be verified by our team. We&apos;ll notify you once your account is approved.</span></div>
-        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> Back</button><button className="cook-continue-button" type="submit">{saved ? "Application Submitted" : "Submit Application"} <ArrowRight /></button></div>
+        {submitError && <p className="cook-submit-error" role="alert">{submitError}</p>}
+        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> Back</button><button className="cook-continue-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Application"} <ArrowRight /></button></div>
         <p className="terms-note">By submitting, you agree to our <u>Terms &amp; Conditions</u></p>
+        {isSubmitting && <div className="cook-submit-overlay" role="status" aria-live="polite" aria-label="Submitting your cook application"><span className="cook-submit-spinner" /><strong>Submitting your application...</strong><small>Uploading documents and saving your details.</small></div>}
     </>;
 }
 

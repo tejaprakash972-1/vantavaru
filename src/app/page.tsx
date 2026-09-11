@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getAuthenticatedRoute } from "@/lib/auth/routing";
 import {
   CalendarDays,
   ChevronDown,
@@ -34,6 +36,8 @@ const steps: { icon: LucideIcon; title: string; detail: string }[] = [
 
 export default function Home() {
   const router = useRouter();
+  const supabase = getSupabaseBrowserClient();
+  const [authResolved, setAuthResolved] = useState(() => !supabase);
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedTime, setSelectedTime] = useState("1 Hour");
   const [locationOpen, setLocationOpen] = useState(false);
@@ -43,6 +47,24 @@ export default function Home() {
   useEffect(() => {
     router.prefetch(`/book?duration=${encodeURIComponent(selectedTime)}`);
   }, [router, selectedTime]);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    void getAuthenticatedRoute().then((destination) => {
+      if (!destination) {
+        router.replace("/login");
+      } else if (destination !== "/") {
+        router.replace(destination);
+      } else {
+        setAuthResolved(true);
+      }
+    });
+  }, [router, supabase]);
+
+  if (!authResolved) {
+    return <main className="auth-route-loading" aria-label="Checking your account" />;
+  }
 
   function bookCook() {
     setIsNavigating(true);
