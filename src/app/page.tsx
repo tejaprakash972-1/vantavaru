@@ -37,7 +37,7 @@ const steps: { icon: LucideIcon; title: string; detail: string }[] = [
 export default function Home() {
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
-  const [authResolved, setAuthResolved] = useState(() => !supabase);
+  const [authResolved, setAuthResolved] = useState(false);
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedTime, setSelectedTime] = useState("1 Hour");
   const [locationOpen, setLocationOpen] = useState(false);
@@ -49,7 +49,10 @@ export default function Home() {
   }, [router, selectedTime]);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      router.replace("/login");
+      return;
+    }
 
     void getAuthenticatedRoute().then((destination) => {
       if (!destination) {
