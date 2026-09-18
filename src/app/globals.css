@@ -713,6 +713,8 @@ h1 {
   color: #747c7e;
   border: 0;
   background: transparent;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
