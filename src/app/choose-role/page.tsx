@@ -10,13 +10,29 @@ export default function ChooseRolePage() {
   const [authResolved, setAuthResolved] = useState(false);
 
   useEffect(() => {
-    void getAuthenticatedRoute().then((destination) => {
-      if (destination && destination !== "/choose-role") {
-        router.replace(destination);
-      } else {
-        setAuthResolved(true);
+    let cancelled = false;
+
+    async function resolveRoute() {
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        const destination = await getAuthenticatedRoute();
+        if (cancelled) return;
+
+        if (destination && destination !== "/choose-role") {
+          router.replace(destination);
+          return;
+        }
+
+        if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 350));
       }
-    });
+
+      if (!cancelled) setAuthResolved(true);
+    }
+
+    void resolveRoute();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   if (!authResolved) {

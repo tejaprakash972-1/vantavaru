@@ -13,7 +13,15 @@ function normalizeRole(value: unknown): AppRole | null {
 
 async function getRoleFromUser(supabase: SupabaseClient, user: User) {
   const metadata = user.user_metadata ?? {};
-  const metadataRole = normalizeRole(metadata.role ?? metadata.user_type ?? metadata.account_type);
+  const appMetadata = user.app_metadata ?? {};
+  const metadataRole = normalizeRole(
+    metadata.role ??
+    metadata.user_type ??
+    metadata.account_type ??
+    appMetadata.role ??
+    appMetadata.user_type ??
+    appMetadata.account_type
+  );
   if (metadataRole) return metadataRole;
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();

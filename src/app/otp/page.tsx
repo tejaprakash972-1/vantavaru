@@ -20,6 +20,16 @@ function OtpPageContent() {
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phone = searchParams.get("phone") || "+91 98765 43210";
 
+  async function waitForAuthenticatedRoute() {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const destination = await getAuthenticatedRoute();
+      if (destination && destination !== "/choose-role") return destination;
+      if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 350));
+    }
+
+    return "/choose-role";
+  }
+
   useEffect(() => {
     void getAuthenticatedRoute().then((destination) => {
       if (destination) router.replace(destination);
@@ -89,8 +99,11 @@ function OtpPageContent() {
       }
     }
 
-    destination ??= await getAuthenticatedRoute();
-    router.replace(destination ?? "/choose-role");
+    if (!destination || destination === "/choose-role") {
+      destination = await waitForAuthenticatedRoute();
+    }
+
+    router.replace(destination);
   }
 
   return (
