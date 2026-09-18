@@ -1,10 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChefHat, House, UserRound } from "lucide-react";
+import { getAuthenticatedRoute } from "@/lib/auth/routing";
 
 export default function ChooseRolePage() {
   const router = useRouter();
+  const [authResolved, setAuthResolved] = useState(false);
+
+  useEffect(() => {
+    void getAuthenticatedRoute().then((destination) => {
+      if (destination && destination !== "/choose-role") {
+        router.replace(destination);
+      } else {
+        setAuthResolved(true);
+      }
+    });
+  }, [router]);
+
+  if (!authResolved) {
+    return <main className="auth-route-loading" aria-label="Checking your account" />;
+  }
 
   return (
     <main className="choose-role-page">
