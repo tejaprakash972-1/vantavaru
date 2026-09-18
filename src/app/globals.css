@@ -37,6 +37,10 @@ body:has(.booking-request-page) {
   background: #fff;
 }
 
+body:has(.choose-role-page) {
+  background: #fff;
+}
+
 .auth-route-loading {
   min-height: 100svh;
   display: grid;
@@ -6182,24 +6186,24 @@ h1 {
 .choose-role-page {
   min-height: 100svh;
   width: 100%;
-  max-width: 430px;
+  max-width: 320px;
   margin: 0 auto;
-  padding: 14px 12px 28px;
+  padding: 8px 6px 28px;
   color: #142338;
   background: #fff;
 }
 
 .choose-role-header {
-  min-height: 34px;
+  min-height: 28px;
   display: grid;
-  grid-template-columns: 34px 1fr 34px;
+  grid-template-columns: 28px 1fr 28px;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .choose-role-back {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border: 0;
@@ -6208,80 +6212,81 @@ h1 {
 }
 
 .choose-role-back svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
 }
 
 .choose-role-brand {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   color: var(--green);
-  font-size: 13px;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .choose-role-brand > span {
   position: relative;
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 5px;
   color: #fff;
   background: var(--green);
 }
 
 .choose-role-brand svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
 }
 
 .choose-role-brand i {
   position: absolute;
   color: var(--orange);
-  font-size: 8px;
+  font-size: 7px;
   font-style: normal;
 }
 
 .choose-role-content {
   width: 100%;
-  max-width: 350px;
+  max-width: 286px;
   margin: 0 auto;
-  padding-top: 46px;
+  padding-top: 42px;
   text-align: center;
 }
 
 .choose-role-content h1 {
   color: #142338;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.2;
   letter-spacing: 0;
 }
 
 .choose-role-content > p {
-  margin-top: 7px;
+  margin-top: 5px;
   color: #637795;
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 9.5px;
+  line-height: 1.35;
 }
 
 .choose-role-options {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  margin-top: 22px;
+  gap: 10px;
+  margin-top: 26px;
 }
 
 .choose-role-card {
   width: 100%;
-  min-height: 70px;
+  min-height: 57px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 10px 11px;
+  gap: 10px;
+  padding: 9px 9px;
   border: 1px solid #e0e7ed;
-  border-radius: 7px;
+  border-radius: 5px;
   color: #142338;
   background: #fff;
   text-align: left;
@@ -6298,8 +6303,8 @@ h1 {
 }
 
 .choose-role-icon {
-  width: 34px;
-  height: 34px;
+  width: 35px;
+  height: 35px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -6309,8 +6314,8 @@ h1 {
 }
 
 .choose-role-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   stroke-width: 1.8;
 }
 
@@ -6319,35 +6324,37 @@ h1 {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .choose-role-copy strong {
-  font-size: 11px;
+  font-size: 9.5px;
   line-height: 1.2;
 }
 
 .choose-role-copy small {
-  max-width: 235px;
+  max-width: 175px;
   color: #637795;
-  font-size: 9px;
-  line-height: 1.3;
+  font-size: 8px;
+  line-height: 1.25;
 }
 
 .choose-role-arrow {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   flex: 0 0 auto;
   color: var(--green);
 }
 
 @media (max-width: 360px) {
   .choose-role-page {
+    max-width: none;
     padding-inline: 6px;
   }
 
   .choose-role-content {
-    padding-top: 40px;
+    max-width: 286px;
+    padding-top: 42px;
   }
 }
 
