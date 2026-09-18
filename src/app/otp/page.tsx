@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { ArrowLeft, House } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getAuthenticatedRoute } from "@/lib/auth/routing";
+import { getAuthenticatedRoute, getAuthenticatedRouteForUser } from "@/lib/auth/routing";
 
 export default function OtpPage() {
   return <Suspense fallback={<main className="otp-page" />}><OtpPageContent /></Suspense>;
@@ -74,17 +74,22 @@ function OtpPageContent() {
     }
 
     const supabase = getSupabaseBrowserClient();
+    let destination: string | null = null;
     if (supabase) {
       setIsVerifying(true);
-      const { error } = await supabase.auth.verifyOtp({ phone: phone.replace(/\s/g, ""), token: code.join(""), type: "sms" });
+      const { data, error } = await supabase.auth.verifyOtp({ phone: phone.replace(/\s/g, ""), token: code.join(""), type: "sms" });
       setIsVerifying(false);
       if (error) {
         setMessage(error.message);
         return;
       }
+
+      if (data.user) {
+        destination = await getAuthenticatedRouteForUser(supabase, data.user);
+      }
     }
 
-    const destination = await getAuthenticatedRoute();
+    destination ??= await getAuthenticatedRoute();
     router.replace(destination ?? "/choose-role");
   }
 
