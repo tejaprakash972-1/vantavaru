@@ -7022,7 +7022,7 @@ h1 {
 }
 
 .otp-inputs {
-  width: min(220px, 100%);
+  width: min(300px, 100%);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
@@ -7161,7 +7161,7 @@ h1 {
   }
 
   .otp-inputs {
-    width: min(300px, 100%);
+    width: min(360px, 100%);
     gap: 12px;
     margin-top: 36px;
   }
@@ -7208,7 +7208,7 @@ h1 {
   }
 
   .otp-inputs {
-    width: min(280px, 100%);
+    width: min(320px, 100%);
     gap: 9px;
   }
 }

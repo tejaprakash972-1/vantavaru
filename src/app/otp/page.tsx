@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAuthenticatedRoute, getAuthenticatedRouteForUser } from "@/lib/auth/routing";
 
+const OTP_LENGTH = 6;
+
 export default function OtpPage() {
   return <Suspense fallback={<main className="otp-page" />}><OtpPageContent /></Suspense>;
 }
@@ -13,7 +15,7 @@ export default function OtpPage() {
 function OtpPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [code, setCode] = useState(["", "", "", ""]);
+  const [code, setCode] = useState(() => Array.from({ length: OTP_LENGTH }, () => ""));
   const [secondsLeft, setSecondsLeft] = useState(45);
   const [message, setMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -63,10 +65,10 @@ function OtpPageContent() {
 
   function handlePaste(event: React.ClipboardEvent<HTMLInputElement>) {
     event.preventDefault();
-    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4).split("");
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH).split("");
     if (!pasted.length) return;
     setCode((current) => current.map((item, index) => pasted[index] || item));
-    inputs.current[Math.min(pasted.length, 4) - 1]?.focus();
+    inputs.current[Math.min(pasted.length, OTP_LENGTH) - 1]?.focus();
   }
 
   async function resendOtp() {
@@ -79,15 +81,15 @@ function OtpPageContent() {
       }
     }
 
-    setCode(["", "", "", ""]);
+    setCode(Array.from({ length: OTP_LENGTH }, () => ""));
     setSecondsLeft(45);
     setMessage("A new OTP has been sent.");
     inputs.current[0]?.focus();
   }
 
   async function verifyOtp() {
-    if (code.join("").length !== 4) {
-      setMessage("Enter the 4-digit OTP to continue.");
+    if (code.join("").length !== OTP_LENGTH) {
+      setMessage("Enter the 6-digit OTP to continue.");
       return;
     }
 
@@ -128,7 +130,7 @@ function OtpPageContent() {
 
       <section className="otp-content" aria-labelledby="otp-title">
         <h1 id="otp-title">Enter OTP</h1>
-        <p>We&apos;ve sent a 4-digit code to<br /><strong>{phone}</strong></p>
+        <p>We&apos;ve sent a 6-digit code to<br /><strong>{phone}</strong></p>
 
         <div className="otp-inputs" aria-label="One-time password">
           {code.map((digit, index) => <input key={index} ref={(element) => { inputs.current[index] = element; }} aria-label={`OTP digit ${index + 1}`} inputMode="numeric" maxLength={1} value={digit} onChange={(event) => updateDigit(index, event.target.value)} onKeyDown={(event) => handleKeyDown(index, event.key)} onPaste={handlePaste} />)}
