@@ -7,12 +7,17 @@ export type AppEntryRoute = "/login" | AuthenticatedRoute;
 
 function normalizeRole(value: unknown): AppRole | null {
   if (typeof value !== "string") return null;
-  const role = value.toLowerCase();
-  if (role === "cook" || role === "customer") return role;
+  const role = value.trim().toLowerCase().replace(/[ _-]+/g, "");
+  if (role === "cook" || role === "homecook") return "cook";
+  if (role === "customer" || role === "user") return "customer";
   return null;
 }
 
 async function getRoleFromUser(supabase: SupabaseClient, user: User) {
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const profileRole = normalizeRole(profile?.role);
+  if (profileRole) return profileRole;
+
   const metadata = user.user_metadata ?? {};
   const appMetadata = user.app_metadata ?? {};
   const metadataRole = normalizeRole(
@@ -24,10 +29,6 @@ async function getRoleFromUser(supabase: SupabaseClient, user: User) {
     appMetadata.account_type
   );
   if (metadataRole) return metadataRole;
-
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  const profileRole = normalizeRole(profile?.role);
-  if (profileRole) return profileRole;
 
   const { data: cookProfile } = await supabase.from("cook_profiles").select("id").eq("user_id", user.id).maybeSingle();
   if (cookProfile) return "cook";
