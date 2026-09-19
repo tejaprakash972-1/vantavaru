@@ -3,6 +3,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AppRole = "cook" | "customer";
 type AuthenticatedRoute = "/" | "/cook-home" | "/choose-role";
+export type AppEntryRoute = "/login" | AuthenticatedRoute;
 
 function normalizeRole(value: unknown): AppRole | null {
   if (typeof value !== "string") return null;
@@ -54,4 +55,14 @@ export async function getAuthenticatedRoute() {
 
   const { data: { user } } = await supabase.auth.getUser();
   return getAuthenticatedRouteForUser(supabase, user ?? session.user);
+}
+
+export async function getAppEntryRoute() {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return "/login" as const;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return "/login" as const;
+
+  return getAuthenticatedRouteForUser(supabase, session.user);
 }

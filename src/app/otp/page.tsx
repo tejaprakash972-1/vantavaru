@@ -17,6 +17,7 @@ function OtpPageContent() {
   const [secondsLeft, setSecondsLeft] = useState(45);
   const [message, setMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phone = searchParams.get("phone") || "+91 98765 43210";
 
@@ -31,9 +32,16 @@ function OtpPageContent() {
   }
 
   useEffect(() => {
+    let cancelled = false;
     void getAuthenticatedRoute().then((destination) => {
-      if (destination) router.replace(destination);
+      if (cancelled) return;
+      if (destination) {
+        router.replace(destination);
+        return;
+      }
+      setAuthChecking(false);
     });
+    return () => { cancelled = true; };
   }, [router]);
 
   useEffect(() => {
@@ -104,6 +112,10 @@ function OtpPageContent() {
     }
 
     router.replace(destination);
+  }
+
+  if (authChecking) {
+    return <main className="auth-route-loading" aria-label="Checking your account" />;
   }
 
   return (
