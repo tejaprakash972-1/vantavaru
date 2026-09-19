@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { ArrowLeft, House } from "lucide-react";
+import { ArrowLeft, House, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAuthenticatedRoute } from "@/lib/auth/routing";
@@ -97,16 +97,19 @@ function OtpPageContent() {
       </header>
 
       <section className="otp-content" aria-labelledby="otp-title">
+        <div className="otp-icon" aria-hidden="true"><ShieldCheck /></div>
         <h1 id="otp-title">Enter OTP</h1>
-        <p>We&apos;ve sent a 4-digit code to<br /><strong>{phone}</strong></p>
+        <p>We&apos;ve sent a 4-digit verification code to <strong>{phone}</strong></p>
 
         <div className="otp-inputs" aria-label="One-time password">
-          {code.map((digit, index) => <input key={index} ref={(element) => { inputs.current[index] = element; }} aria-label={`OTP digit ${index + 1}`} inputMode="numeric" maxLength={1} value={digit} onChange={(event) => updateDigit(index, event.target.value)} onKeyDown={(event) => handleKeyDown(index, event.key)} onPaste={handlePaste} />)}
+          {code.map((digit, index) => <input key={index} ref={(element) => { inputs.current[index] = element; }} aria-label={`OTP digit ${index + 1}`} autoComplete={index === 0 ? "one-time-code" : "off"} inputMode="numeric" pattern="[0-9]*" maxLength={1} value={digit} onChange={(event) => updateDigit(index, event.target.value)} onKeyDown={(event) => handleKeyDown(index, event.key)} onPaste={handlePaste} />)}
         </div>
 
         <div className="otp-resend">
           <span>Didn&apos;t receive the code?</span>
-          <button disabled={secondsLeft > 0} onClick={resendOtp}>Resend OTP in <strong>00:{String(secondsLeft).padStart(2, "0")}</strong></button>
+          <button disabled={secondsLeft > 0} onClick={resendOtp}>
+            {secondsLeft > 0 ? <>Resend OTP in <strong>00:{String(secondsLeft).padStart(2, "0")}</strong></> : "Resend OTP"}
+          </button>
         </div>
 
         {message && <p className="otp-message" role="status">{message}</p>}
