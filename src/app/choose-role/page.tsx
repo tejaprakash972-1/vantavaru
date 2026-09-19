@@ -42,7 +42,6 @@ export default function ChooseRolePage() {
   return (
     <main className="choose-role-page">
       <header className="choose-role-header">
-        <button className="choose-role-back" aria-label="Go back" onClick={() => router.back()}><ArrowLeft /></button>
         <div className="choose-role-brand"><span><House /><i>♥</i></span><strong>Vantavaru</strong></div>
         <span aria-hidden="true" />
       </header>

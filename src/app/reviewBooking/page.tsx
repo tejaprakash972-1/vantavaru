@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IngredientsPanel } from "../../components/IngredientsPanel";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
     ArrowLeft,
     ArrowRight,
@@ -18,14 +19,8 @@ import {
     UsersRound,
 } from "lucide-react";
 
-type MealKey = "Breakfast" | "Lunch" | "Dinner";
-type DishSelections = Record<MealKey, string[]>;
-
-const defaultDishes: DishSelections = {
-    Breakfast: ["Idli", "Dosa"],
-    Lunch: ["Dal"],
-    Dinner: ["Chapati"],
-};
+type MealKey = string;
+type DishSelections = Record<string, string[]>;
 
 export default function ReviewBookingPage() {
     return <Suspense fallback={<div className="review-loading">Loading review...</div>}><ReviewBookingContent /></Suspense>;
@@ -34,23 +29,43 @@ export default function ReviewBookingPage() {
 function ReviewBookingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const supabase = getSupabaseBrowserClient();
     const [confirmed, setConfirmed] = useState(false);
     const [ingredientsOpen, setIngredientsOpen] = useState(false);
+    const [mealNames, setMealNames] = useState<Record<string, string>>({});
 
     const date = searchParams.get("date") || "2026-09-16";
     const time = searchParams.get("time") || "10:00";
     const duration = searchParams.get("duration") || "1 Hour";
     const people = Number(searchParams.get("people") || 4);
-    const meals = (searchParams.get("meals") || "Breakfast,Lunch,Dinner").split(",").filter(Boolean) as MealKey[];
+    const meals = useMemo(() => (searchParams.get("meals") || "").split(",").filter(Boolean) as MealKey[], [searchParams]);
     const notes = searchParams.get("notes") || "";
     const price = Number(searchParams.get("price") || 650);
-    const selectedDishes = useMemo(() => {
+    const selectedDishes = useMemo<DishSelections>(() => {
         try {
-            return { ...defaultDishes, ...JSON.parse(searchParams.get("dishes") || "{}") } as DishSelections;
+            return JSON.parse(searchParams.get("dishes") || "{}") as DishSelections;
         } catch {
-            return defaultDishes;
+            return {};
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (!supabase || meals.length === 0) return;
+        const client = supabase;
+        let cancelled = false;
+
+        async function loadMealNames() {
+            const { data } = await client.from("meal_types").select("id, name").in("id", meals);
+            if (!cancelled) setMealNames(Object.fromEntries((data ?? []).map((meal) => [meal.id, meal.name])));
+        }
+
+        void loadMealNames();
+        return () => { cancelled = true; };
+    }, [meals, supabase]);
+
+    function getMealName(mealId: string) {
+        return mealNames[mealId] ?? "Loading meal...";
+    }
 
     const formattedDate = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`));
     const formattedTime = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(`2026-01-01T${time}`));
@@ -71,8 +86,8 @@ function ReviewBookingContent() {
                     <ReviewCard icon={CalendarDays} label="Date"><strong>{formattedDate}</strong></ReviewCard>
                     <ReviewCard icon={Clock3} label="Time & Duration"><strong>{formattedTime} – {endTime} ({duration})</strong></ReviewCard>
                     <ReviewCard icon={UsersRound} label="Number of People"><strong>{people} {people === 1 ? "person" : "people"}</strong></ReviewCard>
-                    <ReviewCard icon={ChefHat} label="Meal Time(s)"><div className="meal-pills">{meals.map((meal) => <span key={meal}>{meal}</span>)}</div></ReviewCard>
-                    <ReviewCard icon={List} label="Selected Dishes"><div className="selected-dishes">{meals.map((meal) => <div key={meal}><strong>{meal}</strong><span>{selectedDishes[meal]?.join(", ") || "No dishes selected"}</span></div>)}</div></ReviewCard>
+                    <ReviewCard icon={ChefHat} label="Meal Time(s)"><div className="meal-pills">{meals.map((meal) => <span key={meal}>{getMealName(meal)}</span>)}</div></ReviewCard>
+                    <ReviewCard icon={List} label="Selected Dishes"><div className="selected-dishes">{meals.map((meal) => <div key={meal}><strong>{getMealName(meal)}</strong><span>{selectedDishes[meal]?.join(", ") || "No dishes selected"}</span></div>)}</div></ReviewCard>
                     <ReviewCard icon={FileText} label="Additional Notes"><span>{notes || "No additional notes"}</span></ReviewCard>
                 </div>
 
@@ -84,7 +99,7 @@ function ReviewBookingContent() {
                 <button className="confirm-button" onClick={() => setConfirmed(true)}>{confirmed ? <><Check /> Booking Confirmed</> : "Confirm Booking"}</button>
                 {confirmed && <p className="confirmation-status" role="status">Your booking request has been sent.</p>}
             </main>
-            <IngredientsPanel people={people} selectedMeals={meals} selectedDishes={selectedDishes} open={ingredientsOpen} onClose={() => setIngredientsOpen(false)} />
+            <IngredientsPanel people={people} selectedMeals={meals} mealNames={mealNames} selectedDishes={selectedDishes} open={ingredientsOpen} onClose={() => setIngredientsOpen(false)} />
         </div>
     );
 }
