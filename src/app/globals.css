@@ -118,6 +118,582 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+.booking-confirmed-page {
+  width: min(100%, 760px);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 22px 20px 36px;
+  color: #18332a;
+  background: #fff;
+}
+
+.booking-confirmed-header {
+  margin-bottom: 18px;
+}
+
+.confirmed-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.confirmed-brand-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #08783f;
+  background: #e5f6e9;
+  border-radius: 12px;
+}
+
+.confirmed-brand-mark svg {
+  width: 23px;
+  height: 23px;
+  fill: #08783f;
+  stroke: #fff;
+}
+
+.confirmed-brand strong,
+.confirmed-brand small {
+  display: block;
+}
+
+.confirmed-brand strong {
+  color: #08783f;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.confirmed-brand small {
+  margin-top: 2px;
+  color: #698077;
+  font-size: 9px;
+}
+
+.confirmed-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 20px 27px;
+  text-align: center;
+  background: linear-gradient(135deg, #eefbf0, #f7fcf5);
+  border-radius: 16px;
+}
+
+.confirmed-check {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  place-items: center;
+  color: #fff;
+  background: #159568;
+  border: 7px solid #ddf5e4;
+  border-radius: 50%;
+  box-shadow: 0 7px 18px #1595682b;
+}
+
+.confirmed-check svg {
+  width: 30px;
+  height: 30px;
+  stroke-width: 3;
+}
+
+.confirmed-hero h1 {
+  margin: 0;
+  color: #113b2b;
+  font-size: clamp(26px, 5vw, 36px);
+  letter-spacing: -.8px;
+}
+
+.confirmed-hero p {
+  margin: 6px 0 3px;
+  color: #1e4737;
+  font-size: 17px;
+}
+
+.confirmed-hero>span {
+  color: #687d74;
+  font-size: 14px;
+}
+
+.confetti {
+  position: absolute;
+  width: 7px;
+  height: 13px;
+  border-radius: 4px;
+  transform: rotate(32deg);
+}
+
+.confetti-one {
+  top: 20px;
+  left: 39%;
+  background: #f7b522;
+}
+
+.confetti-two {
+  top: 38px;
+  right: 34%;
+  background: #87bb77;
+  transform: rotate(-22deg);
+}
+
+.confetti-three {
+  top: 28px;
+  right: 41%;
+  background: #f07b22;
+  transform: rotate(42deg);
+}
+
+.confirmed-card,
+.confirmed-otp-card,
+.confirmed-payment-card {
+  margin-top: 14px;
+  padding: 20px;
+  border: 1px solid #e6ece8;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px #15352a0a;
+}
+
+.confirmed-card-heading,
+.confirmed-section-title,
+.payment-line,
+.payment-total,
+.payment-success,
+.confirmed-status {
+  display: flex;
+  align-items: center;
+}
+
+.confirmed-card-heading {
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+
+.confirmed-card h2,
+.confirmed-section-title h2 {
+  margin: 0;
+  color: #142820;
+  font-size: 21px;
+}
+
+.booking-id-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  color: #5e7280;
+  font-size: 13px;
+  font-weight: 700;
+  background: #f0f5f8;
+  border: 0;
+  border-radius: 9px;
+}
+
+.booking-id-copy svg {
+  width: 16px;
+  height: 16px;
+  color: #36567a;
+}
+
+.confirmed-detail-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 1.25fr;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  color: #627078;
+  font-size: 15px;
+}
+
+.confirmed-detail-row svg {
+  width: 20px;
+  height: 20px;
+  color: #526b78;
+}
+
+.confirmed-detail-row strong {
+  color: #233a35;
+  font-weight: 700;
+}
+
+.confirmed-status {
+  gap: 11px;
+  margin-top: 13px;
+  padding-top: 14px;
+  border-top: 1px solid #e6ece8;
+}
+
+.status-dot {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  background: #20a35d;
+  border-radius: 50%;
+}
+
+.confirmed-status div {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.confirmed-status strong {
+  color: #30433d;
+  font-size: 15px;
+}
+
+.confirmed-status small {
+  color: #718079;
+  font-size: 12px;
+}
+
+.confirmed-status b {
+  padding: 8px 12px;
+  color: #614d16;
+  font-size: 13px;
+  background: #fff0bd;
+  border-radius: 999px;
+}
+
+.confirmed-section-title {
+  gap: 11px;
+  margin-bottom: 15px;
+}
+
+.confirmed-section-title svg {
+  width: 24px;
+  height: 24px;
+  color: #1a3028;
+}
+
+.meals-card {
+  padding-bottom: 12px;
+}
+
+.confirmed-meal {
+  margin-bottom: 13px;
+}
+
+.confirmed-meal-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: #224635;
+  background: #edf9ef;
+  border-radius: 9px;
+}
+
+.confirmed-meal-heading span {
+  color: #657770;
+  font-size: 13px;
+}
+
+.confirmed-meal ul {
+  margin: 5px 0 0;
+  padding: 0 12px 0 27px;
+}
+
+.confirmed-meal li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  color: #30413c;
+  font-size: 15px;
+}
+
+.confirmed-meal li small {
+  color: #728078;
+  font-size: 13px;
+}
+
+.confirmed-empty {
+  margin: 0;
+  color: #718079;
+  font-size: 14px;
+}
+
+.confirmed-otp-card {
+  color: #2450b3;
+  background: #f1f4ff;
+  border: 0;
+}
+
+.confirmed-otp-card .confirmed-section-title {
+  margin-bottom: 18px;
+}
+
+.confirmed-otp-card .confirmed-section-title h2 {
+  color: #2850b0;
+}
+
+.otp-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.otp-item {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.otp-item+.otp-item {
+  border-left: 1px solid #d0d8f6;
+}
+
+.otp-item>span {
+  color: #4e5e7a;
+  font-size: 14px;
+}
+
+.otp-item strong {
+  padding: 5px 16px;
+  color: #2c53c5;
+  font-size: 26px;
+  letter-spacing: 5px;
+  background: #e3e7ff;
+  border: 1px solid #cbd5ff;
+  border-radius: 8px;
+}
+
+.otp-item small {
+  max-width: 220px;
+  color: #596985;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.confirmed-payment-card {
+  background: linear-gradient(135deg, #f1fbf1, #f8fcf5);
+  border: 0;
+}
+
+.payment-line {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 0;
+  color: #556b63;
+}
+
+.payment-line small {
+  font-size: 12px;
+}
+
+.payment-line strong {
+  color: #263c34;
+}
+
+.confirmed-payment-card hr {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid #d8e5db;
+}
+
+.payment-total {
+  justify-content: space-between;
+  color: #162c24;
+  font-size: 17px;
+}
+
+.payment-success {
+  gap: 10px;
+  margin-top: 17px;
+}
+
+.payment-success>span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #fff;
+  background: #1ba45e;
+  border-radius: 50%;
+}
+
+.payment-success>span svg {
+  width: 21px;
+}
+
+.payment-success div {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+}
+
+.payment-success div strong {
+  color: #1c8b4f;
+  font-size: 14px;
+}
+
+.payment-success div small {
+  overflow: hidden;
+  color: #65766f;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payment-success button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  color: #1b8450;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+}
+
+.payment-success button svg {
+  width: 17px;
+}
+
+.confirmed-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.confirmed-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 12px 14px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+.confirmed-actions svg {
+  width: 20px;
+  height: 20px;
+}
+
+.confirmed-home-button {
+  color: #167e4d;
+  background: #fff;
+  border: 2px solid #167e4d;
+}
+
+.confirmed-bookings-button {
+  color: #fff;
+  background: #168b55;
+  border: 2px solid #168b55;
+}
+
+.booking-confirmed-loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  color: #08783f;
+}
+
+.booking-confirmed-error {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  padding: 24px;
+  color: #18332a;
+  text-align: center;
+}
+
+.booking-confirmed-error button {
+  padding: 11px 16px;
+  color: #fff;
+  background: #168b55;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .booking-confirmed-page {
+    padding: 16px 12px 26px;
+  }
+
+  .confirmed-hero {
+    padding: 24px 14px 22px;
+  }
+
+  .confirmed-hero p {
+    font-size: 15px;
+  }
+
+  .confirmed-hero>span {
+    font-size: 12px;
+  }
+
+  .confirmed-card,
+  .confirmed-otp-card,
+  .confirmed-payment-card {
+    padding: 16px;
+  }
+
+  .confirmed-card h2,
+  .confirmed-section-title h2 {
+    font-size: 18px;
+  }
+
+  .confirmed-detail-row {
+    grid-template-columns: 22px 1fr 1.35fr;
+    font-size: 13px;
+  }
+
+  .confirmed-detail-row svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .confirmed-status {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .confirmed-status b {
+    margin-left: 26px;
+  }
+
+  .otp-item {
+    padding: 0 8px;
+  }
+
+  .otp-item strong {
+    font-size: 21px;
+    letter-spacing: 3px;
+  }
+
+  .otp-item small {
+    font-size: 11px;
+  }
+
+  .payment-success {
+    align-items: flex-start;
+  }
+
+  .payment-success button {
+    font-size: 12px;
+  }
+
+  .confirmed-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -1643,7 +2219,7 @@ h1 {
   border-bottom: 1px solid #edf0f4;
   color: #56657a;
   text-align: left;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .ingredients-panel th {
@@ -1742,6 +2318,475 @@ h1 {
   background: #27364c;
   box-shadow: 0 8px 22px #13243b33;
   font-size: 12px;
+}
+
+.cook-stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.cook-stat-card {
+  min-height: 75px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #e3e8ef;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 2px 10px #253e5d08;
+}
+
+.cook-stat-card>span {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+}
+
+.cook-stat-card svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cook-stat-card small,
+.cook-stat-card strong {
+  display: block;
+}
+
+.cook-stat-card small {
+  color: #718096;
+  font-size: 12px;
+}
+
+.cook-stat-card strong {
+  margin-top: 4px;
+  color: #1d2c40;
+  font-size: 20px;
+}
+
+.cook-stat-card.blue>span {
+  color: #4b55e9;
+  background: #eef0ff;
+}
+
+.cook-stat-card.amber>span {
+  color: #bb8200;
+  background: #fff5d9;
+}
+
+.cook-stat-card.green>span {
+  color: #1d9a50;
+  background: #e2f8e9;
+}
+
+.cook-stat-card.red>span {
+  color: #e14444;
+  background: #ffebeb;
+}
+
+.cook-management-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 8px;
+  align-items: start;
+  min-height: calc(100vh - 210px);
+}
+
+.cook-list-panel,
+.cook-review-panel {
+  border: 1px solid #e3e8ef;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 2px 10px #253e5d08;
+}
+
+.cook-list-panel {
+  min-width: 0;
+  min-height: calc(100vh - 210px);
+  display: flex;
+  flex-direction: column;
+}
+
+.cook-list-tabs {
+  min-height: 51px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border-bottom: 1px solid #e8ecf2;
+}
+
+.cook-list-tabs>button {
+  height: 31px;
+  padding: 0 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #66758a;
+  background: transparent;
+  font-size: 12px;
+}
+
+.cook-list-tabs>button.active {
+  color: #4b3bed;
+  border-bottom-color: #4b3bed;
+}
+
+.cook-list-tabs label {
+  width: 175px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 0 7px;
+  border: 1px solid #e0e5ec;
+  border-radius: 4px;
+  color: #8995a6;
+}
+
+.cook-list-tabs label svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cook-list-tabs input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #39485a;
+  font: inherit;
+  font-size: 11px;
+}
+
+.cook-table-wrap {
+  overflow-x: auto;
+  flex: 1;
+}
+
+.cook-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 730px;
+  table-layout: fixed;
+}
+
+.cook-table-wrap .admin-table-message {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+}
+
+.cook-table-wrap th,
+.cook-table-wrap td {
+  padding: 12px 10px;
+  border-right: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+  text-align: left;
+  font-size: 11px;
+  color: #536174;
+}
+
+.cook-table-wrap th {
+  color: #5c6b7f;
+  background: #f5f7fa;
+  font-size: 10px;
+}
+
+.cook-table-wrap td strong {
+  color: #253348;
+}
+
+.cook-table-wrap tr {
+  cursor: pointer;
+}
+
+.cook-table-wrap tr:hover,
+.cook-table-wrap tr.selected-row {
+  background: #fafaff;
+}
+
+.cook-row-actions {
+  position: relative;
+  display: flex;
+  gap: 5px;
+}
+
+.cook-row-actions>button {
+  min-height: 30px;
+  border: 1px solid #dce3eb;
+  border-radius: 4px;
+  color: #536174;
+  background: #fff;
+  font-size: 11px;
+}
+
+.cook-row-actions>button:first-child {
+  padding: 0 8px;
+  color: #4b3bed;
+  border-color: #bdb8ff;
+}
+
+.cook-row-actions>button:last-of-type {
+  width: 30px;
+  display: grid;
+  place-items: center;
+}
+
+.cook-row-actions svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cook-status-pill {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.cook-status-pill.pending {
+  color: #986d00;
+  background: #fff1c5;
+}
+
+.cook-status-pill.approved {
+  color: #218345;
+  background: #d9f7df;
+}
+
+.cook-status-pill.rejected {
+  color: #cc3838;
+  background: #ffe0e0;
+}
+
+.cook-action-menu {
+  position: absolute;
+  z-index: 10;
+  top: 35px;
+  right: 0;
+  width: 160px;
+  padding: 4px;
+  border: 1px solid #dce3eb;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 8px 20px #253e5d1c;
+}
+
+.cook-action-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px;
+  border: 0;
+  color: #405065;
+  background: #fff;
+  text-align: left;
+  font-size: 11px;
+}
+
+.cook-action-menu button:hover {
+  background: #f5f7fb;
+}
+
+.cook-action-menu svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cook-action-menu button:first-child svg {
+  color: #21914b;
+}
+
+.cook-action-menu button:last-child svg {
+  color: #df4545;
+}
+
+.cook-review-panel {
+  padding: 12px;
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+}
+
+.cook-review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8ecf2;
+}
+
+.cook-review-header h2 {
+  margin: 0;
+  color: #1e2b3b;
+  font-size: 15px;
+}
+
+.cook-review-header p {
+  margin: 3px 0 0;
+  color: #78869a;
+  font-size: 11px;
+}
+
+.cook-review-header>button {
+  padding: 0;
+  border: 0;
+  color: #78869a;
+  background: transparent;
+}
+
+.cook-review-header svg {
+  width: 15px;
+  height: 15px;
+}
+
+.cook-review-block {
+  margin-top: 13px;
+}
+
+.cook-review-block h3 {
+  margin: 0 0 7px;
+  color: #1e2b3b;
+  font-size: 13px;
+}
+
+.cook-review-block>div {
+  padding: 8px;
+  border: 1px solid #e3e8ef;
+  border-radius: 4px;
+}
+
+.cook-detail {
+  display: grid;
+  grid-template-columns: 42% 58%;
+  gap: 5px;
+  margin: 0;
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.cook-detail span {
+  color: #718096;
+}
+
+.cook-detail strong {
+  color: #344358;
+  font-weight: 600;
+}
+
+.cook-document-list>div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 0;
+  border-bottom: 1px solid #eef1f5;
+  font-size: 11px;
+}
+
+.cook-document-list>div:last-child {
+  border-bottom: 0;
+}
+
+.cook-document-list svg {
+  width: 14px;
+  height: 14px;
+  color: #64748a;
+}
+
+.cook-document-list span {
+  flex: 1;
+  color: #344358;
+  text-transform: capitalize;
+}
+
+.cook-document-list b {
+  padding: 3px 6px;
+  border-radius: 20px;
+  color: #218345;
+  background: #d9f7df;
+  font-size: 10px;
+}
+
+.cook-document-list p {
+  margin: 0;
+  color: #78869a;
+  font-size: 11px;
+}
+
+.cook-review-reason {
+  margin-top: 13px;
+}
+
+.cook-review-reason label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #344358;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cook-review-reason small {
+  color: #8793a4;
+  font-weight: 400;
+}
+
+.cook-review-reason textarea {
+  min-height: 72px;
+  padding: 9px;
+  border: 1px solid #dce3eb;
+  border-radius: 4px;
+  outline: 0;
+  resize: vertical;
+  font: inherit;
+  font-size: 11px;
+}
+
+.cook-review-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.cook-review-actions button {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cook-review-actions svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cook-reject-button {
+  border: 1px solid #f05b5b;
+  color: #e14444;
+  background: #fff;
+}
+
+.cook-approve-button {
+  border: 0;
+  color: #fff;
+  background: #4b3bed;
+}
+
+.admin-data-error {
+  margin: 0 0 8px;
+  color: #d63a40;
+  font-size: 11px;
 }
 
 @media (max-width: 1050px) {

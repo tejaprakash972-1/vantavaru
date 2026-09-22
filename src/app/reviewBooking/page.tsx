@@ -2,13 +2,13 @@
 
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Script from "next/script";
 import { IngredientsPanel } from "../../components/IngredientsPanel";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
     ArrowLeft,
     ArrowRight,
     CalendarDays,
-    Check,
     ChefHat,
     Clock3,
     Edit3,
@@ -22,6 +22,18 @@ import {
 type MealKey = string;
 type DishSelections = Record<string, string[]>;
 
+declare global {
+    interface Window {
+        Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+    }
+}
+
+type RazorpaySuccessResponse = {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+};
+
 export default function ReviewBookingPage() {
     return <Suspense fallback={<div className="review-loading">Loading review...</div>}><ReviewBookingContent /></Suspense>;
 }
@@ -30,9 +42,12 @@ function ReviewBookingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const supabase = getSupabaseBrowserClient();
-    const [confirmed, setConfirmed] = useState(false);
     const [ingredientsOpen, setIngredientsOpen] = useState(false);
     const [mealNames, setMealNames] = useState<Record<string, string>>({});
+    const [platformFee, setPlatformFee] = useState(0);
+    const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [orderError, setOrderError] = useState("");
 
     const date = searchParams.get("date") || "2026-09-16";
     const time = searchParams.get("time") || "10:00";
@@ -63,6 +78,20 @@ function ReviewBookingContent() {
         return () => { cancelled = true; };
     }, [meals, supabase]);
 
+    useEffect(() => {
+        if (!supabase) return;
+        const client = supabase;
+        let cancelled = false;
+
+        async function loadPlatformFee() {
+            const { data } = await client.from("app_settings").select("value").eq("key", "platform_fee").maybeSingle();
+            if (!cancelled) setPlatformFee(Number(data?.value ?? 0));
+        }
+
+        void loadPlatformFee();
+        return () => { cancelled = true; };
+    }, [supabase]);
+
     function getMealName(mealId: string) {
         return mealNames[mealId] ?? "Loading meal...";
     }
@@ -70,9 +99,70 @@ function ReviewBookingContent() {
     const formattedDate = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`));
     const formattedTime = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(`2026-01-01T${time}`));
     const endTime = addHours(time, duration === "2 Hours" ? 2 : 1);
+    const balanceToCook = Math.max(0, price - platformFee);
+    const totalAmount = platformFee + balanceToCook;
+
+    async function verifyPayment(response: RazorpaySuccessResponse) {
+        setIsVerifying(true);
+        try {
+            const { data: { session } } = await supabase?.auth.getSession() ?? { data: { session: null } };
+            if (!session?.access_token) throw new Error("Please sign in again before completing your booking.");
+
+            const verifyResponse = await fetch("/api/verify-payment", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    ...response,
+                    booking: { date, time, duration, people, price: totalAmount, platformFee, cookFee: balanceToCook, meals, dishes: selectedDishes },
+                }),
+            });
+            const result = await verifyResponse.json();
+            if (!verifyResponse.ok || !result.success) throw new Error(result.error || "Payment verification failed.");
+            const confirmationParams = new URLSearchParams({ bookingId: result.booking?.id || response.razorpay_order_id });
+            router.push(`/booking-confirmed?${confirmationParams.toString()}`);
+        } catch (error) {
+            setOrderError(error instanceof Error ? error.message : "Payment verification failed.");
+        } finally {
+            setIsVerifying(false);
+        }
+    }
+
+    async function payNow() {
+        setOrderError("");
+        setIsCreatingOrder(true);
+        try {
+            const response = await fetch("/api/create-order", { method: "POST" });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || "Failed to create order.");
+            const order = result.order;
+
+            if (typeof window.Razorpay !== "function") throw new Error("Payment could not be started. Please try again.");
+
+            const razorpay = new window.Razorpay({
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: order.amount,
+                currency: "INR",
+                name: "Vantavaru",
+                description: "Platform fee",
+                order_id: order.id,
+                handler: (response: RazorpaySuccessResponse) => void verifyPayment(response),
+                modal: { ondismiss: () => setIsCreatingOrder(false) },
+                theme: { color: "#08783f" },
+            });
+            razorpay.open();
+        } catch (error) {
+            setOrderError(error instanceof Error ? error.message : "Failed to create order.");
+        } finally {
+            setIsCreatingOrder(false);
+        }
+    }
 
     return (
         <div className="review-background">
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
             <main className="review-page">
                 <header className="review-header">
                     <button className="review-back" onClick={() => router.back()} aria-label="Go back"><ArrowLeft /></button>
@@ -93,11 +183,13 @@ function ReviewBookingContent() {
 
                 <button className="review-ingredients-button" onClick={() => setIngredientsOpen(true)}><span><ChefHat /></span><div><strong>View Ingredients</strong><small>See ingredients for each dish and total required</small></div><ArrowRight /></button>
 
-                <section className="price-breakdown"><div className="total-price"><span>Estimated Price</span><strong>₹{price}</strong><Info /></div><div className="price-lines"><div><span>Base Fee ({duration})</span><b>₹{duration === "2 Hours" ? 600 : 400}</b></div><div><span>Extra People ({Math.max(0, people - 2)} × ₹50)</span><b>₹{Math.max(0, people - 2) * 50}</b></div><div><span>Meals ({meals.length} × ₹50)</span><b>₹{meals.length * 50}</b></div><hr /><div className="price-total-line"><strong>Total (Estimated)</strong><strong>₹{price}</strong></div></div></section>
+                <section className="price-breakdown"><div className="total-price"><span>Total Price</span><strong>₹{totalAmount}</strong><Info /></div><div className="price-lines"><div><span>Platform Fee (Pay Now)</span><b>₹{platformFee}</b></div><div><span>Balance to Cook (After Service)</span><b>₹{balanceToCook}</b></div><hr /><div className="price-total-line"><strong>Total</strong><strong>₹{totalAmount}</strong></div></div></section>
 
-                <aside className="confirmation-note"><span><ShieldCheck /></span><div><strong>You’ll be charged after the cook is confirmed.</strong><p>You can cancel anytime before confirmation.</p></div></aside>
-                <button className="confirm-button" onClick={() => setConfirmed(true)}>{confirmed ? <><Check /> Booking Confirmed</> : "Confirm Booking"}</button>
-                {confirmed && <p className="confirmation-status" role="status">Your booking request has been sent.</p>}
+                <aside className="confirmation-note"><span><ShieldCheck /></span><div><strong>Pay the platform fee now to confirm.</strong><p>The remaining balance is paid to the cook after the service.</p></div></aside>
+                <button className="confirm-button" onClick={payNow} disabled={isCreatingOrder || isVerifying}>
+                    {isVerifying ? "Verifying payment..." : isCreatingOrder ? "Starting payment..." : <>Proceed to Payment <ArrowRight /></>}
+                </button>
+                {orderError && <p className="confirmation-status" role="status">{orderError}</p>}
             </main>
             <IngredientsPanel people={people} selectedMeals={meals} mealNames={mealNames} selectedDishes={selectedDishes} open={ingredientsOpen} onClose={() => setIngredientsOpen(false)} />
         </div>

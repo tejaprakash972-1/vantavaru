@@ -1,8 +1,8 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type AppRole = "cook" | "customer";
-type AuthenticatedRoute = "/" | "/cook-home" | "/choose-role";
+type AppRole = "cook" | "customer" | "admin";
+type AuthenticatedRoute = "/" | "/cook-home" | "/admin-panel-vv" | "/choose-role";
 export type AppEntryRoute = "/login" | AuthenticatedRoute;
 
 function normalizeRole(value: unknown): AppRole | null {
@@ -10,6 +10,7 @@ function normalizeRole(value: unknown): AppRole | null {
   const role = value.trim().toLowerCase();
   if (role === "cook") return "cook";
   if (role === "customer") return "customer";
+  if (role === "admin") return "admin";
   return null;
 }
 
@@ -45,6 +46,7 @@ async function getRoleFromUser(supabase: SupabaseClient, user: User) {
 
 function getRouteFromRole(role: AppRole | null): AuthenticatedRoute {
   if (role === "cook") return "/cook-home";
+  if (role === "admin") return "/admin-panel-vv";
   if (role === "customer") return "/";
   return "/choose-role";
 }
