@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Biyyu</string>
+    <string name="title_activity_main">Biyyu</string>
+    <string name="package_name">com.biyyu.app</string>
+    <string name="custom_url_scheme">com.biyyu.app</string>
+</resources>
