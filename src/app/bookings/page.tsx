@@ -148,26 +148,26 @@ export default function BookingsPage() {
 
     return (
         <>
-        <main className="bookings-page">
-            <header className="bookings-header">
-                <div className="bookings-brand"><div className="bookings-brand-mark"><House /><span>♥</span></div><strong>Vantavaru</strong></div>
-            </header>
+            <main className="bookings-page">
+                <header className="bookings-header">
+                    <div className="bookings-brand"><div className="bookings-brand-mark"><House /><span>♥</span></div><strong>Vantavaru</strong></div>
+                </header>
 
-            <section className="bookings-intro"><h1>Booking History</h1><p>View and manage all your meal bookings</p></section>
+                <section className="bookings-intro"><h1>Booking History</h1><p>View and manage all your meal bookings</p></section>
 
-            <div className="booking-tabs" role="tablist" aria-label="Booking status"><button role="tab" aria-selected={tab === "upcoming"} className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>Upcoming ({upcomingCount})</button><button role="tab" aria-selected={tab === "completed"} className={tab === "completed" ? "active" : ""} onClick={() => setTab("completed")}>Completed ({completedCount})</button></div>
+                <div className="booking-tabs" role="tablist" aria-label="Booking status"><button role="tab" aria-selected={tab === "upcoming"} className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>Upcoming ({upcomingCount})</button><button role="tab" aria-selected={tab === "completed"} className={tab === "completed" ? "active" : ""} onClick={() => setTab("completed")}>Completed ({completedCount})</button></div>
 
-            <section className="booking-history-list" aria-live="polite">
-                {loading ? <div className="empty-bookings"><CalendarDays /><strong>Loading bookings</strong><span>Please wait while we fetch your bookings.</span></div> : error ? <div className="empty-bookings"><CalendarDays /><strong>{error}</strong><span>Your bookings will appear here once available.</span></div> : visibleBookings.length === 0 ? <div className="empty-bookings"><CalendarDays /><strong>No {tab} bookings</strong><span>Your meal bookings will appear here.</span></div> : visibleBookings.map((booking) => <BookingCard key={booking.id} booking={booking} onOpen={() => router.push(`/booking-confirmed?bookingId=${booking.id}`)} />)}
-            </section>
+                <section className="booking-history-list" aria-live="polite">
+                    {loading ? <div className="empty-bookings"><CalendarDays /><strong>Loading bookings</strong><span>Please wait while we fetch your bookings.</span></div> : error ? <div className="empty-bookings"><CalendarDays /><strong>{error}</strong><span>Your bookings will appear here once available.</span></div> : visibleBookings.length === 0 ? <div className="empty-bookings"><CalendarDays /><strong>No {tab} bookings</strong><span>Your meal bookings will appear here.</span></div> : visibleBookings.map((booking) => <BookingCard key={booking.id} booking={booking} onOpen={() => router.push(`/booking-confirmed?bookingId=${booking.id}`)} />)}
+                </section>
 
-        </main>
+            </main>
 
-        <BottomNav
-            items={[{ label: "Home", icon: House }, { label: "My Bookings", icon: CalendarDays }, { label: "Settings", icon: Settings }]}
-            activeLabel={activeNav}
-            onSelect={(label) => { setActiveNav(label); if (label === "Home") router.push("/"); }}
-        />
+            <BottomNav
+                items={[{ label: "Home", icon: House }, { label: "My Bookings", icon: CalendarDays }, { label: "Settings", icon: Settings }]}
+                activeLabel={activeNav}
+                onSelect={(label) => { setActiveNav(label); if (label === "Home") router.push("/"); }}
+            />
         </>
     );
 }
