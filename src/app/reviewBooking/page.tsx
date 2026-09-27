@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { IngredientsPanel } from "../../components/IngredientsPanel";
+import RequestLoader from "@/components/RequestLoader";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
     ArrowLeft,
@@ -21,6 +22,7 @@ import {
 
 type MealKey = string;
 type DishSelections = Record<string, string[]>;
+const bookingDraftStorageKey = "vantavaru-review-return-draft";
 
 declare global {
     interface Window {
@@ -45,6 +47,8 @@ function ReviewBookingContent() {
     const [ingredientsOpen, setIngredientsOpen] = useState(false);
     const [mealNames, setMealNames] = useState<Record<string, string>>({});
     const [platformFee, setPlatformFee] = useState(0);
+    const [reviewDataLoading, setReviewDataLoading] = useState(true);
+    const [reviewDataError, setReviewDataError] = useState("");
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [orderError, setOrderError] = useState("");
@@ -52,6 +56,7 @@ function ReviewBookingContent() {
     const date = searchParams.get("date") || "2026-09-16";
     const time = searchParams.get("time") || "10:00";
     const duration = searchParams.get("duration") || "1 Hour";
+    const bookingId = searchParams.get("bookingId");
     const people = Number(searchParams.get("people") || 4);
     const meals = useMemo(() => (searchParams.get("meals") || "").split(",").filter(Boolean) as MealKey[], [searchParams]);
     const notes = searchParams.get("notes") || "";
@@ -65,32 +70,31 @@ function ReviewBookingContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        if (!supabase || meals.length === 0) return;
-        const client = supabase;
         let cancelled = false;
 
-        async function loadMealNames() {
-            const { data } = await client.from("meal_types").select("id, name").in("id", meals);
-            if (!cancelled) setMealNames(Object.fromEntries((data ?? []).map((meal) => [meal.id, meal.name])));
+        async function loadReviewData() {
+            if (!supabase) {
+                setReviewDataError("Booking summary data is unavailable because Supabase is not configured.");
+                setReviewDataLoading(false);
+                return;
+            }
+
+            const [mealResult, feeResult] = await Promise.all([
+                meals.length > 0 ? supabase.from("meal_types").select("id, name").in("id", meals) : Promise.resolve({ data: [], error: null }),
+                supabase.from("app_settings").select("value").eq("key", "platform_fee").maybeSingle(),
+            ]);
+            if (!cancelled) {
+                const requestError = mealResult.error || feeResult.error;
+                if (requestError) setReviewDataError(requestError.message);
+                setMealNames(Object.fromEntries((mealResult.data ?? []).map((meal) => [meal.id, meal.name])));
+                setPlatformFee(Number(feeResult.data?.value ?? 0));
+                setReviewDataLoading(false);
+            }
         }
 
-        void loadMealNames();
+        void loadReviewData();
         return () => { cancelled = true; };
     }, [meals, supabase]);
-
-    useEffect(() => {
-        if (!supabase) return;
-        const client = supabase;
-        let cancelled = false;
-
-        async function loadPlatformFee() {
-            const { data } = await client.from("app_settings").select("value").eq("key", "platform_fee").maybeSingle();
-            if (!cancelled) setPlatformFee(Number(data?.value ?? 0));
-        }
-
-        void loadPlatformFee();
-        return () => { cancelled = true; };
-    }, [supabase]);
 
     function getMealName(mealId: string) {
         return mealNames[mealId] ?? "Loading meal...";
@@ -101,6 +105,8 @@ function ReviewBookingContent() {
     const endTime = addHours(time, duration === "2 Hours" ? 2 : 1);
     const balanceToCook = Math.max(0, price - platformFee);
     const totalAmount = platformFee + balanceToCook;
+
+    if (reviewDataLoading) return <RequestLoader message="Loading booking summary..." />;
 
     async function verifyPayment(response: RazorpaySuccessResponse) {
         setIsVerifying(true);
@@ -121,6 +127,7 @@ function ReviewBookingContent() {
             });
             const result = await verifyResponse.json();
             if (!verifyResponse.ok || !result.success) throw new Error(result.error || "Payment verification failed.");
+            window.sessionStorage.removeItem(bookingDraftStorageKey);
             const confirmationParams = new URLSearchParams({ bookingId: result.booking?.id || response.razorpay_order_id });
             router.push(`/booking-confirmed?${confirmationParams.toString()}`);
         } catch (error) {
@@ -132,6 +139,42 @@ function ReviewBookingContent() {
 
     async function payNow() {
         setOrderError("");
+        if (bookingId) {
+            setIsVerifying(true);
+            try {
+                const { data: { session } } = await supabase?.auth.getSession() ?? { data: { session: null } };
+                if (!session?.access_token) throw new Error("Please sign in again before updating your booking.");
+
+                const updateResponse = await fetch("/api/update-booking", {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        bookingId,
+                        date,
+                        time,
+                        duration,
+                        people,
+                        cookFee: balanceToCook,
+                        meals,
+                        dishes: selectedDishes,
+                        notes,
+                    }),
+                });
+                const result = await updateResponse.json();
+                if (!updateResponse.ok || !result.success) throw new Error(result.error || "Unable to update booking.");
+                window.sessionStorage.removeItem(bookingDraftStorageKey);
+                router.push(`/booking-confirmed?bookingId=${encodeURIComponent(bookingId)}`);
+            } catch (error) {
+                setOrderError(error instanceof Error ? error.message : "Unable to update booking.");
+            } finally {
+                setIsVerifying(false);
+            }
+            return;
+        }
+
         setIsCreatingOrder(true);
         try {
             const response = await fetch("/api/create-order", { method: "POST" });
@@ -171,6 +214,7 @@ function ReviewBookingContent() {
                 </header>
 
                 <section className="review-intro"><h1>Review Booking</h1><p>Please review your details before confirming.</p></section>
+                {reviewDataError && <p className="confirmation-status" role="alert">{reviewDataError}</p>}
 
                 <div className="review-details">
                     <ReviewCard icon={CalendarDays} label="Date"><strong>{formattedDate}</strong></ReviewCard>
@@ -185,13 +229,14 @@ function ReviewBookingContent() {
 
                 <section className="price-breakdown"><div className="total-price"><span>Total Price</span><strong>₹{totalAmount}</strong><Info /></div><div className="price-lines"><div><span>Platform Fee (Pay Now)</span><b>₹{platformFee}</b></div><div><span>Balance to Cook (After Service)</span><b>₹{balanceToCook}</b></div><hr /><div className="price-total-line"><strong>Total</strong><strong>₹{totalAmount}</strong></div></div></section>
 
-                <aside className="confirmation-note"><span><ShieldCheck /></span><div><strong>Pay the platform fee now to confirm.</strong><p>The remaining balance is paid to the cook after the service.</p></div></aside>
+                <aside className="confirmation-note"><span><ShieldCheck /></span><div><strong>{bookingId ? "Your existing payment remains applied." : "Pay the platform fee now to confirm."}</strong><p>{bookingId ? "Updating this booking will not create another payment." : "The remaining balance is paid to the cook after the service."}</p></div></aside>
                 <button className="confirm-button" onClick={payNow} disabled={isCreatingOrder || isVerifying}>
-                    {isVerifying ? "Verifying payment..." : isCreatingOrder ? "Starting payment..." : <>Proceed to Payment <ArrowRight /></>}
+                    {isVerifying ? (bookingId ? "Updating booking..." : "Verifying payment...") : isCreatingOrder ? "Starting payment..." : bookingId ? <>Update Booking <ArrowRight /></> : <>Proceed to Payment <ArrowRight /></>}
                 </button>
                 {orderError && <p className="confirmation-status" role="status">{orderError}</p>}
             </main>
             <IngredientsPanel people={people} selectedMeals={meals} mealNames={mealNames} selectedDishes={selectedDishes} open={ingredientsOpen} onClose={() => setIngredientsOpen(false)} />
+            {(isCreatingOrder || isVerifying) && <RequestLoader message={isVerifying ? (bookingId ? "Updating booking..." : "Verifying payment...") : "Starting secure payment..."} />}
         </div>
     );
 }

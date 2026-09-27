@@ -1,8 +1,9 @@
 "use client";
 
-import { startTransition, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IngredientsPanel } from "../../components/IngredientsPanel";
+import RequestLoader from "@/components/RequestLoader";
 import {
     ArrowLeft,
     ArrowRight,
@@ -19,9 +20,9 @@ type MealType = { id: string; name: string; sortOrder: number };
 type Dish = { id: string; name: string; mealTypeId: string; preparationCostPerPerson: number };
 type SelectedDishes = Record<string, string[]>;
 type BookingFees = { cookFee: number; platformFee: number };
-type BookingDraft = { duration: string; bookingDate: string; bookingTime: string; people: number; selectedMeals: string[]; selectedDishes: SelectedDishes; notes: string };
+type BookingDraft = { bookingId?: string | null; duration: string; bookingDate: string; bookingTime: string; people: number; selectedMeals: string[]; selectedDishes: SelectedDishes; notes: string };
 
-const bookingDraftStorageKey = "vantavaru-booking-draft";
+const bookingDraftStorageKey = "vantavaru-review-return-draft";
 
 export default function BookPage() {
     return <Suspense fallback={<div className="booking-loading">Loading booking options...</div>}><BookPageContent /></Suspense>;
@@ -31,11 +32,15 @@ function BookPageContent() {
     const supabase = getSupabaseBrowserClient();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const initialDuration = searchParams.get("duration") === "2 Hours" ? "2 Hours" : "1 Hour";
+    const bookingId = searchParams.get("bookingId");
+    const requestedDuration = searchParams.get("duration");
+    const hasRequestedDuration = requestedDuration === "1 Hour" || requestedDuration === "2 Hours";
+    const initialDuration = hasRequestedDuration ? requestedDuration : "1 Hour";
+    const [initialDateTime] = useState(getNextBookingDateTime);
     const [duration, setDuration] = useState(initialDuration);
-    const [bookingDate, setBookingDate] = useState("2026-09-16");
-    const [bookingTime, setBookingTime] = useState("10:00");
-    const [people, setPeople] = useState(4);
+    const [bookingDate, setBookingDate] = useState(initialDateTime.date);
+    const [bookingTime, setBookingTime] = useState(initialDateTime.time);
+    const [people, setPeople] = useState(1);
     const [mealTypes, setMealTypes] = useState<MealType[]>([]);
     const [dishes, setDishes] = useState<Dish[]>([]);
     const [bookingFees, setBookingFees] = useState<BookingFees>({ cookFee: 0, platformFee: 0 });
@@ -43,19 +48,24 @@ function BookPageContent() {
     const [selectedDishes, setSelectedDishes] = useState<SelectedDishes>({});
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [mealDataLoading, setMealDataLoading] = useState(true);
+    const [editLoading, setEditLoading] = useState(Boolean(bookingId));
+    const [editError, setEditError] = useState("");
     const [mealDataError, setMealDataError] = useState("");
+    const [dateTimeError, setDateTimeError] = useState("");
+    const [dateTimeNotice, setDateTimeNotice] = useState("");
     const [notes, setNotes] = useState("");
     const [ingredientsOpen, setIngredientsOpen] = useState(false);
-    const skipInitialPersist = useRef(true);
-
     useEffect(() => {
         const storedDraft = window.sessionStorage.getItem(bookingDraftStorageKey);
         if (!storedDraft) {
             return;
         }
 
+        if (bookingId) return;
+        window.sessionStorage.removeItem(bookingDraftStorageKey);
         try {
             const draft = JSON.parse(storedDraft) as Partial<BookingDraft>;
+            if (draft.bookingId) return;
             startTransition(() => {
                 if (draft.duration === "1 Hour" || draft.duration === "2 Hours") setDuration(draft.duration);
                 if (typeof draft.bookingDate === "string") setBookingDate(draft.bookingDate);
@@ -71,13 +81,116 @@ function BookPageContent() {
     }, []);
 
     useEffect(() => {
-        if (skipInitialPersist.current) {
-            skipInitialPersist.current = false;
+        if (!bookingId) {
+            setEditLoading(false);
             return;
         }
-        const draft: BookingDraft = { duration, bookingDate, bookingTime, people, selectedMeals, selectedDishes, notes };
-        window.sessionStorage.setItem(bookingDraftStorageKey, JSON.stringify(draft));
-    }, [bookingDate, bookingTime, duration, notes, people, selectedDishes, selectedMeals]);
+        if (!supabase) {
+            setEditError("Booking editing is unavailable because Supabase is not configured.");
+            setEditLoading(false);
+            return;
+        }
+
+        const client = supabase;
+        let cancelled = false;
+        async function loadBookingForEdit() {
+            const { data: { user }, error: authError } = await client.auth.getUser();
+            if (authError || !user) {
+                if (!cancelled) {
+                    setEditError("Please log in again to edit this booking.");
+                    setEditLoading(false);
+                }
+                return;
+            }
+
+            const { data: booking, error: bookingError } = await client
+                .from("bookings")
+                .select("id, customer_id, booking_date, booking_time, duration_minutes, people_count, status, cook_profile_id, customer_notes")
+                .eq("id", bookingId)
+                .eq("customer_id", user.id)
+                .maybeSingle();
+
+            if (bookingError || !booking) {
+                if (!cancelled) {
+                    setEditError(bookingError?.message || "This booking could not be found.");
+                    setEditLoading(false);
+                }
+                return;
+            }
+
+            if (booking.status !== "searching_cook" || booking.cook_profile_id) {
+                if (!cancelled) {
+                    setEditError("This booking can no longer be edited because a cook has been assigned or the service has started.");
+                    setEditLoading(false);
+                }
+                return;
+            }
+
+            const storedDraft = window.sessionStorage.getItem(bookingDraftStorageKey);
+            if (storedDraft) {
+                window.sessionStorage.removeItem(bookingDraftStorageKey);
+                try {
+                    const draft = JSON.parse(storedDraft) as Partial<BookingDraft>;
+                    if (draft.bookingId === bookingId) {
+                        const normalizedDateTime = normalizeBookingDateTime(draft.bookingDate ?? booking.booking_date, draft.bookingTime ?? booking.booking_time.slice(0, 5));
+                        if (draft.duration === "1 Hour" || draft.duration === "2 Hours") setDuration(draft.duration);
+                        setBookingDate(normalizedDateTime.date);
+                        setBookingTime(normalizedDateTime.time);
+                        if (normalizedDateTime.adjusted) setDateTimeNotice("The saved date or time has passed or is outside booking hours. It was moved to the next available slot; please review it.");
+                        if (typeof draft.people === "number") setPeople(draft.people);
+                        if (Array.isArray(draft.selectedMeals)) setSelectedMeals(draft.selectedMeals);
+                        if (draft.selectedDishes && typeof draft.selectedDishes === "object") setSelectedDishes(draft.selectedDishes);
+                        if (typeof draft.notes === "string") setNotes(draft.notes);
+                        if (!cancelled) setEditLoading(false);
+                        return;
+                    }
+                } catch {
+                    window.sessionStorage.removeItem(bookingDraftStorageKey);
+                }
+            }
+
+            const [mealLinks, dishLinks] = await Promise.all([
+                client.from("booking_meals").select("meal_type_id").eq("booking_id", bookingId),
+                client.from("booking_dishes").select("meal_type_id, dish_id").eq("booking_id", bookingId),
+            ]);
+            const dishIds = (dishLinks.data ?? []).map((link) => link.dish_id);
+            const dishesResult = dishIds.length > 0
+                ? await client.from("dishes").select("id, name, meal_type_id").in("id", dishIds)
+                : { data: [], error: null };
+
+            if (mealLinks.error || dishLinks.error || dishesResult.error) {
+                if (!cancelled) {
+                    setEditError("Unable to load the selected meals and dishes for this booking.");
+                    setEditLoading(false);
+                }
+                return;
+            }
+
+            const dishesById = new Map((dishesResult.data ?? []).map((dish) => [dish.id, dish]));
+            const selectedByMeal: SelectedDishes = {};
+            (dishLinks.data ?? []).forEach((link) => {
+                const dish = dishesById.get(link.dish_id);
+                if (!dish || !link.meal_type_id) return;
+                selectedByMeal[link.meal_type_id] = [...(selectedByMeal[link.meal_type_id] ?? []), dish.name];
+            });
+
+            if (!cancelled) {
+                const normalizedDateTime = normalizeBookingDateTime(booking.booking_date, booking.booking_time.slice(0, 5));
+                setDuration(booking.duration_minutes === 120 ? "2 Hours" : "1 Hour");
+                setBookingDate(normalizedDateTime.date);
+                setBookingTime(normalizedDateTime.time);
+                if (normalizedDateTime.adjusted) setDateTimeNotice("The saved date or time has passed or is outside booking hours. It was moved to the next available slot; please review it.");
+                setPeople(booking.people_count);
+                setNotes(booking.customer_notes ?? "");
+                setSelectedMeals((mealLinks.data ?? []).map((link) => link.meal_type_id));
+                setSelectedDishes(selectedByMeal);
+                setEditLoading(false);
+            }
+        }
+
+        void loadBookingForEdit();
+        return () => { cancelled = true; };
+    }, [bookingId, supabase]);
 
     const price = useMemo(() => {
         const selectedDishCount = Object.values(selectedDishes).reduce((count, selected) => count + selected.length, 0);
@@ -90,6 +203,11 @@ function BookPageContent() {
         return preparationCostPerPerson * people + bookingFees.cookFee + bookingFees.platformFee;
     }, [bookingFees, dishes, people, selectedDishes]);
     const mealNames = useMemo(() => Object.fromEntries(mealTypes.map((meal) => [meal.id, meal.name])), [mealTypes]);
+    const earliestBooking = getNextBookingDateTime();
+    const minimumBookingDate = earliestBooking.date;
+    const minimumBookingTime = bookingDate === minimumBookingDate ? earliestBooking.time : undefined;
+    const timeOptions = getTimeOptions(minimumBookingTime);
+    const selectedTimeIsAvailable = timeOptions.some((option) => option.value === bookingTime);
 
     useEffect(() => {
         let cancelled = false;
@@ -128,6 +246,9 @@ function BookPageContent() {
         return () => { cancelled = true; };
     }, [supabase]);
 
+    if (mealDataLoading || editLoading) return <RequestLoader message={bookingId ? "Loading your booking..." : "Loading booking options..."} />;
+    if (editError) return <main className="booking-confirmed-error"><strong>{editError}</strong><button onClick={() => router.push(`/booking-confirmed?bookingId=${encodeURIComponent(bookingId || "")}`)}>Back to booking details</button></main>;
+
     function toggleMeal(meal: string) {
         const isSelected = selectedMeals.includes(meal);
         setSelectedMeals((current) => isSelected ? current.filter((item) => item !== meal) : [...current, meal]);
@@ -152,6 +273,17 @@ function BookPageContent() {
     }
 
     function continueToReview() {
+        if (!bookingDate || bookingDate < minimumBookingDate) {
+            setDateTimeError("Choose today or a future date.");
+            return;
+        }
+        if (!isAllowedBookingTime(bookingTime) || (bookingDate === minimumBookingDate && bookingTime < earliestBooking.time)) {
+            setDateTimeError("Choose a time between 6:00 AM and 8:00 PM in 30-minute intervals.");
+            return;
+        }
+        setDateTimeError("");
+        const draft: BookingDraft = { bookingId, duration, bookingDate, bookingTime, people, selectedMeals, selectedDishes, notes };
+        window.sessionStorage.setItem(bookingDraftStorageKey, JSON.stringify(draft));
         const params = new URLSearchParams({
             date: bookingDate,
             time: bookingTime,
@@ -162,6 +294,7 @@ function BookPageContent() {
             notes,
             price: String(price),
         });
+        if (bookingId) params.set("bookingId", bookingId);
         router.push(`/reviewBooking?${params.toString()}`);
     }
 
@@ -171,14 +304,14 @@ function BookPageContent() {
                 <div className="booking-scroll-content">
                     <header className="booking-header">
                         <button className="back-button" onClick={() => window.history.back()} aria-label="Go back"><ArrowLeft /></button>
-                        <h1>Book a Cook</h1>
+                        <h1>{bookingId ? "Edit Booking" : "Book a Cook"}</h1>
                         <span className="header-spacer" aria-hidden="true" />
                     </header>
 
                     <div className="booking-form">
                         <section className="form-step">
                             <StepNumber number={1} />
-                            <div className="form-content"><h2>Select date &amp; time</h2><div className="datetime-fields"><label className="field-button input-field"><CalendarDays /><input aria-label="Select date" type="date" value={bookingDate} min="2026-09-09" onChange={(event) => setBookingDate(event.target.value)} /></label><label className="field-button input-field"><Clock3 /><input aria-label="Select time" type="time" value={bookingTime} onChange={(event) => setBookingTime(event.target.value)} /></label></div></div>
+                            <div className="form-content"><h2>Select date &amp; time</h2><div className="datetime-fields"><label className="field-button input-field"><CalendarDays /><input aria-label="Select date" type="date" value={bookingDate} min={minimumBookingDate} onChange={(event) => { const nextDate = event.target.value; setBookingDate(nextDate); setDateTimeError(""); setDateTimeNotice(""); const nextMinimum = nextDate === minimumBookingDate ? earliestBooking.time : undefined; const nextOptions = getTimeOptions(nextMinimum); if (!nextOptions.some((option) => option.value === bookingTime)) setBookingTime(nextOptions[0]?.value ?? ""); }} /></label><label className="field-button input-field"><Clock3 /><select aria-label="Select time" value={selectedTimeIsAvailable ? bookingTime : ""} onChange={(event) => { setBookingTime(event.target.value); setDateTimeError(""); setDateTimeNotice(""); }}><option value="" disabled>Select a time</option>{!selectedTimeIsAvailable && bookingTime && <option value={bookingTime} disabled>{formatTimeOption(bookingTime)} · choose a 30-minute slot</option>}{timeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><ChevronDown aria-hidden="true" /></label></div>{dateTimeNotice && <p className="form-hint" role="status">{dateTimeNotice}</p>}{dateTimeError && <p className="form-error" role="alert">{dateTimeError}</p>}</div>
                         </section>
 
                         <section className="form-step">
@@ -219,6 +352,52 @@ function BookPageContent() {
 
 function StepNumber({ number }: { number: number }) {
     return <span className="step-number" aria-hidden="true">{number}</span>;
+}
+
+function getNextBookingDateTime() {
+    const now = new Date();
+    const nextSlot = new Date(now);
+    nextSlot.setSeconds(0, 0);
+    nextSlot.setMinutes(Math.ceil((now.getMinutes() + 1) / 30) * 30);
+    if (nextSlot.getHours() < 6) nextSlot.setHours(6, 0, 0, 0);
+    if (nextSlot.getHours() > 20 || (nextSlot.getHours() === 20 && nextSlot.getMinutes() > 0)) {
+        nextSlot.setDate(nextSlot.getDate() + 1);
+        nextSlot.setHours(6, 0, 0, 0);
+    }
+    const localDate = new Date(nextSlot.getTime() - nextSlot.getTimezoneOffset() * 60_000);
+    return {
+        date: localDate.toISOString().slice(0, 10),
+        time: `${String(nextSlot.getHours()).padStart(2, "0")}:${String(nextSlot.getMinutes()).padStart(2, "0")}`,
+    };
+}
+
+function normalizeBookingDateTime(date: string, time: string) {
+    const earliest = getNextBookingDateTime();
+    const normalizedDate = date < earliest.date ? earliest.date : date;
+    const options = getTimeOptions(normalizedDate === earliest.date ? earliest.time : undefined);
+    if (!isAllowedBookingTime(time) || (normalizedDate === earliest.date && time < earliest.time)) {
+        return { date: normalizedDate, time: options[0]?.value ?? earliest.time, adjusted: true };
+    }
+    return { date: normalizedDate, time, adjusted: normalizedDate !== date };
+}
+
+function isAllowedBookingTime(value: string) {
+    const [hours, minutes] = value.split(":").map(Number);
+    return Number.isInteger(hours) && Number.isInteger(minutes) && hours >= 6 && hours <= 20 && (minutes === 0 || minutes === 30);
+}
+
+function getTimeOptions(minimumTime?: string) {
+    return Array.from({ length: 29 }, (_, index) => {
+        const totalMinutes = 6 * 60 + index * 30;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const value = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+        return { value, label: formatTimeOption(value) };
+    }).filter((option) => !minimumTime || option.value >= minimumTime);
+}
+
+function formatTimeOption(value: string) {
+    return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(`2026-01-01T${value}`));
 }
 
 function MultiSelectDropdown({ id, label, options, selected, open, onToggle, onSelect }: { id: string; label: string; options: { id: string; label: string }[]; selected: string[]; open: boolean; onToggle: () => void; onSelect: (id: string) => void }) {

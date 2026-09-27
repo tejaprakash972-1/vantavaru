@@ -9,12 +9,13 @@ import {
     ChevronRight,
     Clock3,
     House,
+    LoaderCircle,
     MapPin,
     Settings,
     UsersRound,
 } from "lucide-react";
 
-type BookingTab = "upcoming" | "completed";
+type BookingTab = "upcoming" | "completed" | "cancelled";
 
 type BookingRow = {
     id: string;
@@ -142,8 +143,6 @@ export default function BookingsPage() {
         return () => { cancelled = true; };
     }, [supabase]);
 
-    const upcomingCount = bookings.filter((booking) => booking.status === "upcoming").length;
-    const completedCount = bookings.filter((booking) => booking.status === "completed").length;
     const visibleBookings = bookings.filter((booking) => booking.status === tab);
 
     return (
@@ -155,10 +154,10 @@ export default function BookingsPage() {
 
                 <section className="bookings-intro"><h1>Booking History</h1><p>View and manage all your meal bookings</p></section>
 
-                <div className="booking-tabs" role="tablist" aria-label="Booking status"><button role="tab" aria-selected={tab === "upcoming"} className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>Upcoming ({upcomingCount})</button><button role="tab" aria-selected={tab === "completed"} className={tab === "completed" ? "active" : ""} onClick={() => setTab("completed")}>Completed ({completedCount})</button></div>
+                <div className="booking-tabs" role="tablist" aria-label="Booking status"><button role="tab" aria-selected={tab === "upcoming"} className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>Upcoming</button><button role="tab" aria-selected={tab === "completed"} className={tab === "completed" ? "active" : ""} onClick={() => setTab("completed")}>Completed</button><button role="tab" aria-selected={tab === "cancelled"} className={tab === "cancelled" ? "active" : ""} onClick={() => setTab("cancelled")}>Cancelled</button></div>
 
                 <section className="booking-history-list" aria-live="polite">
-                    {loading ? <div className="empty-bookings"><CalendarDays /><strong>Loading bookings</strong><span>Please wait while we fetch your bookings.</span></div> : error ? <div className="empty-bookings"><CalendarDays /><strong>{error}</strong><span>Your bookings will appear here once available.</span></div> : visibleBookings.length === 0 ? <div className="empty-bookings"><CalendarDays /><strong>No {tab} bookings</strong><span>Your meal bookings will appear here.</span></div> : visibleBookings.map((booking) => <BookingCard key={booking.id} booking={booking} onOpen={() => router.push(`/booking-confirmed?bookingId=${booking.id}`)} />)}
+                    {loading ? <div className="empty-bookings booking-loading" role="status" aria-live="polite"><LoaderCircle className="booking-loading-spinner" aria-hidden="true" /><strong>Loading bookings</strong><span>Please wait while we fetch your bookings.</span></div> : error ? <div className="empty-bookings"><CalendarDays /><strong>{error}</strong><span>Your bookings will appear here once available.</span></div> : visibleBookings.length === 0 ? <div className="empty-bookings"><CalendarDays /><strong>No {tab} bookings</strong><span>Your meal bookings will appear here.</span></div> : visibleBookings.map((booking) => <BookingCard key={booking.id} booking={booking} onOpen={() => router.push(`/booking-confirmed?bookingId=${booking.id}`)} />)}
                 </section>
 
             </main>
@@ -184,7 +183,8 @@ function BookingCard({ booking, onOpen }: { booking: BookingCardData; onOpen: ()
 }
 
 function mapBooking(booking: BookingRow, mealNames: Map<string, string>, dishNames: Map<string, string>, dishLinks: BookingDishRow[], cooks: Map<string, string>, mealRows: BookingMealRow[] = []): BookingCardData {
-    const status = isCompletedBooking(booking) ? "completed" : "upcoming";
+    const normalizedStatus = booking.status.toLowerCase();
+    const status: BookingTab = isCancelledBooking(normalizedStatus) ? "cancelled" : isCompletedBooking(booking) ? "completed" : "upcoming";
     const linkedMeals = mealRows.filter((row) => row.booking_id === booking.id).map((row) => mealNames.get(row.meal_type_id)).filter((name): name is string => Boolean(name));
     const linkedDishes = dishLinks.filter((row) => row.booking_id === booking.id).map((row) => dishNames.get(row.dish_id)).filter((name): name is string => Boolean(name));
     const total = Number(booking.total_amount ?? Number(booking.platform_fee || 0) + Number(booking.cook_fee || 0));
@@ -205,6 +205,10 @@ function mapBooking(booking: BookingRow, mealNames: Map<string, string>, dishNam
 
 function isCompletedBooking(booking: BookingRow) {
     return Boolean(booking.completed_at) || ["completed", "complete", "done"].includes(booking.status.toLowerCase());
+}
+
+function isCancelledBooking(status: string) {
+    return status === "cancelled" || status === "canceled";
 }
 
 function formatStatus(status: string) {

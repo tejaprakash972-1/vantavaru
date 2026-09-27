@@ -5,6 +5,7 @@ import {
     ChevronDown,
     ChevronUp,
     Info,
+    LoaderCircle,
     ShoppingBasket,
     Sunrise,
     Sun,
@@ -122,7 +123,7 @@ export function IngredientsPanel({ people, selectedMeals, mealNames = {}, select
             <aside className="ingredients-panel" role="dialog" aria-modal="true" aria-labelledby="ingredients-title" onMouseDown={(event) => event.stopPropagation()}>
                 <header className="ingredients-header"><div><h2 id="ingredients-title">Ingredients for {people} {people === 1 ? "person" : "people"}</h2><p>Ingredients calculated for all selected dishes.</p></div><button className="ingredients-close" onClick={onClose} aria-label="Close ingredients"><X /></button></header>
                 <div className="ingredients-tabs"><button className={view === "meal" ? "" : "active"} onClick={() => setView("combined")}>Combined</button><button className={view === "meal" ? "active" : ""} onClick={() => setView("meal")}>By Meal</button></div>
-                {loading ? <p className="ingredients-loading">Loading ingredients...</p> : error ? <p className="ingredients-error" role="alert">{error}</p> : selectedMeals.length === 0 ? <p className="ingredients-loading">Select a meal and dishes to see ingredients.</p> : view === "combined" ? <>
+                {loading ? <p className="ingredients-loading" role="status"><LoaderCircle className="ingredients-spinner" aria-hidden="true" />Loading ingredients...</p> : error ? <p className="ingredients-error" role="alert">{error}</p> : selectedMeals.length === 0 ? <p className="ingredients-loading">Select a meal and dishes to see ingredients.</p> : view === "combined" ? <>
                     <section className="ingredients-summary"><div className="ingredients-summary-icon"><ShoppingBasket /></div><div><strong>Total Ingredients (Combined)</strong><span>All selected dishes · {people} {people === 1 ? "person" : "people"}</span></div><div className="ingredient-stats"><span><b>{combinedIngredients.length}</b>Items</span><span><b>{selectedMeals.length}</b>Meals</span><span><b>{people}</b>People</span></div></section>
                     <IngredientTable ingredients={combinedIngredients} />
                     <DishBreakdown meals={selectedMeals} mealNames={resolvedMealNames} selectedDishes={selectedDishes} mealIngredients={mealIngredients} expandedMeal={expandedMeal} onToggle={(meal) => setExpandedMeal(expandedMeal === meal ? null : meal)} />

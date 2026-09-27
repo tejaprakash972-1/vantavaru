@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ChefHat, ChevronDown, House, ShieldCheck, UserRound, Utensils } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAuthenticatedRoute } from "@/lib/auth/routing";
+import RequestLoader from "@/components/RequestLoader";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -103,6 +104,7 @@ export default function LoginPage() {
                 </div>
                 {signupType && <p className="signup-status" role="status">{signupType === "customer" ? "Customer account registration selected." : "Cook registration selected."}</p>}
             </section>
+            {isSending && <RequestLoader message="Sending verification code..." />}
         </main>
     );
 }

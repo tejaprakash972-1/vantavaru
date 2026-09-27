@@ -5,6 +5,7 @@ import { ArrowLeft, House } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAuthenticatedRoute, getAuthenticatedRouteForUser } from "@/lib/auth/routing";
+import RequestLoader from "@/components/RequestLoader";
 
 const OTP_LENGTH = 6;
 
@@ -19,6 +20,7 @@ function OtpPageContent() {
   const [secondsLeft, setSecondsLeft] = useState(45);
   const [message, setMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phone = searchParams.get("phone") || "+91 98765 43210";
@@ -73,18 +75,25 @@ function OtpPageContent() {
 
   async function resendOtp() {
     const supabase = getSupabaseBrowserClient();
-    if (supabase) {
-      const { error } = await supabase.auth.signInWithOtp({ phone: phone.replace(/\s/g, "") });
-      if (error) {
-        setMessage(error.message);
-        return;
+    setIsResending(true);
+    try {
+      if (supabase) {
+        const { error } = await supabase.auth.signInWithOtp({ phone: phone.replace(/\s/g, "") });
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
       }
-    }
 
-    setCode(Array.from({ length: OTP_LENGTH }, () => ""));
-    setSecondsLeft(45);
-    setMessage("A new OTP has been sent.");
-    inputs.current[0]?.focus();
+      setCode(Array.from({ length: OTP_LENGTH }, () => ""));
+      setSecondsLeft(45);
+      setMessage("A new OTP has been sent.");
+      inputs.current[0]?.focus();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to send a new OTP.");
+    } finally {
+      setIsResending(false);
+    }
   }
 
   async function verifyOtp() {
@@ -95,25 +104,25 @@ function OtpPageContent() {
 
     const supabase = getSupabaseBrowserClient();
     let destination: string | null = null;
-    if (supabase) {
-      setIsVerifying(true);
-      const { data, error } = await supabase.auth.verifyOtp({ phone: phone.replace(/\s/g, ""), token: code.join(""), type: "sms" });
+    setIsVerifying(true);
+    try {
+      if (supabase) {
+        const { data, error } = await supabase.auth.verifyOtp({ phone: phone.replace(/\s/g, ""), token: code.join(""), type: "sms" });
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+
+        if (data.user) destination = await getAuthenticatedRouteForUser(supabase, data.user);
+      }
+
+      if (!destination || destination === "/choose-role") destination = await waitForAuthenticatedRoute();
+      router.replace(destination);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to verify OTP.");
+    } finally {
       setIsVerifying(false);
-      if (error) {
-        setMessage(error.message);
-        return;
-      }
-
-      if (data.user) {
-        destination = await getAuthenticatedRouteForUser(supabase, data.user);
-      }
     }
-
-    if (!destination || destination === "/choose-role") {
-      destination = await waitForAuthenticatedRoute();
-    }
-
-    router.replace(destination);
   }
 
   if (authChecking) {
@@ -138,12 +147,13 @@ function OtpPageContent() {
 
         <div className="otp-resend">
           <span>Didn&apos;t receive the code?</span>
-          <button disabled={secondsLeft > 0} onClick={resendOtp}>Resend OTP in <strong>00:{String(secondsLeft).padStart(2, "0")}</strong></button>
+          <button disabled={secondsLeft > 0 || isResending || isVerifying} onClick={resendOtp}>{isResending ? "Sending OTP..." : <>Resend OTP in <strong>00:{String(secondsLeft).padStart(2, "0")}</strong></>}</button>
         </div>
 
         {message && <p className="otp-message" role="status">{message}</p>}
-        <button className="otp-verify-button" onClick={verifyOtp} disabled={isVerifying}>{isVerifying ? "Verifying..." : "Verify OTP"}</button>
+        <button className="otp-verify-button" onClick={verifyOtp} disabled={isVerifying || isResending}>{isVerifying ? "Verifying..." : "Verify OTP"}</button>
       </section>
+      {(isVerifying || isResending) && <RequestLoader message={isVerifying ? "Verifying your code..." : "Sending a new code..."} />}
     </main>
   );
 }

@@ -7,6 +7,7 @@ import {
     Trash2, Utensils, UsersRound, X,
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import RequestLoader from "@/components/RequestLoader";
 
 type Dish = {
     id: string;
@@ -68,6 +69,7 @@ export default function AdminPanelPage() {
     const [selectedCookId, setSelectedCookId] = useState<string | null>(null);
     const [openCookMenu, setOpenCookMenu] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -146,33 +148,43 @@ export default function AdminPanelPage() {
 
     async function saveSelectedDish(draft: DishDraft) {
         if (!supabase || !selectedDish) return;
-        const { error: updateError } = await supabase.from("dishes").update({
-            name: draft.name,
-            description: draft.description,
-            category: draft.category,
-            meal_type_id: draft.mealTypeId,
-            preparation_cost_per_person: draft.preparationCost,
-            is_active: draft.isActive,
-        }).eq("id", selectedDish.id);
-        if (updateError) {
-            setError(updateError.message);
-            return;
+        setActionLoading(true);
+        try {
+            const { error: updateError } = await supabase.from("dishes").update({
+                name: draft.name,
+                description: draft.description,
+                category: draft.category,
+                meal_type_id: draft.mealTypeId,
+                preparation_cost_per_person: draft.preparationCost,
+                is_active: draft.isActive,
+            }).eq("id", selectedDish.id);
+            if (updateError) {
+                setError(updateError.message);
+                return;
+            }
+            const updatedMealType = mealTypes.find((mealType) => mealType.id === draft.mealTypeId);
+            setDishes((current) => current.map((dish) => dish.id === selectedDish.id ? { ...dish, ...draft, mealTypeName: updatedMealType?.name ?? "Uncategorized" } : dish));
+            setNotice("Dish updated successfully");
+            window.setTimeout(() => setNotice(""), 2600);
+        } finally {
+            setActionLoading(false);
         }
-        const updatedMealType = mealTypes.find((mealType) => mealType.id === draft.mealTypeId);
-        setDishes((current) => current.map((dish) => dish.id === selectedDish.id ? { ...dish, ...draft, mealTypeName: updatedMealType?.name ?? "Uncategorized" } : dish));
-        setNotice("Dish updated successfully");
-        window.setTimeout(() => setNotice(""), 2600);
     }
 
     async function updateCookStatus(cookId: string, status: CookStatus) {
         if (!supabase) return;
-        const payload = status === "rejected" ? { status, rejection_reason: rejectionReason || "Rejected by admin", rejected_at: new Date().toISOString() } : { status, approved_at: new Date().toISOString(), rejection_reason: null };
-        const { error: updateError } = await supabase.from("cook_profiles").update(payload).eq("id", cookId);
-        if (updateError) { setError(updateError.message); return; }
-        setCooks((current) => current.map((cook) => cook.id === cookId ? { ...cook, status, rejectionReason: status === "rejected" ? rejectionReason || "Rejected by admin" : "" } : cook));
-        setNotice(status === "approved" ? "Cook approved successfully" : "Cook rejected successfully");
-        setOpenCookMenu(null);
-        window.setTimeout(() => setNotice(""), 2600);
+        setActionLoading(true);
+        try {
+            const payload = status === "rejected" ? { status, rejection_reason: rejectionReason || "Rejected by admin", rejected_at: new Date().toISOString() } : { status, approved_at: new Date().toISOString(), rejection_reason: null };
+            const { error: updateError } = await supabase.from("cook_profiles").update(payload).eq("id", cookId);
+            if (updateError) { setError(updateError.message); return; }
+            setCooks((current) => current.map((cook) => cook.id === cookId ? { ...cook, status, rejectionReason: status === "rejected" ? rejectionReason || "Rejected by admin" : "" } : cook));
+            setNotice(status === "approved" ? "Cook approved successfully" : "Cook rejected successfully");
+            setOpenCookMenu(null);
+            window.setTimeout(() => setNotice(""), 2600);
+        } finally {
+            setActionLoading(false);
+        }
     }
 
     return (
@@ -197,6 +209,7 @@ export default function AdminPanelPage() {
                 </div>
             </section>
             {notice && <div className="admin-toast" role="status">{notice}</div>}
+            {(loading || actionLoading) && <RequestLoader message={loading ? "Loading admin data..." : "Saving changes..."} />}
         </main>
     );
 }
