@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Capacitor } from "@capacitor/core";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import BottomNav from "@/components/BottomNav";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { setCookAvailability } from "@/lib/cook/availability";
@@ -41,6 +42,22 @@ const upcomingBookings: CookBooking[] = [
   { id: 3, day: "20", month: "Nov 2024", meal: "Dinner", time: "7:00 PM – 8:30 PM", location: "Indiranagar, Bengaluru", people: "5 people", status: "Pending" },
 ];
 
+async function registerCookDevice(supabase: SupabaseClient) {
+  const { getFCMToken } = await import("@/lib/firebase-messaging");
+  const token = await getFCMToken();
+  if (!token) throw new Error(typeof Notification !== "undefined" && Notification.permission === "denied" ? "Notifications are blocked. Enable them in your browser settings." : "Unable to enable notifications on this device.");
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.access_token) throw new Error("Please sign in again to enable notifications.");
+  const response = await fetch("/api/cook/push-device", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ pushToken: token, platform: Capacitor.getPlatform() === "android" ? "android" : "web" }),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Unable to register this device.");
+}
+
 export default function CookHomePage() {
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
@@ -58,6 +75,18 @@ export default function CookHomePage() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushError, setPushError] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pushRegistration = useRef<Promise<void> | null>(null);
+
+  function registerDevice(client: SupabaseClient) {
+    if (!pushRegistration.current) {
+      const registration = registerCookDevice(client);
+      pushRegistration.current = registration;
+      void registration.finally(() => {
+        if (pushRegistration.current === registration) pushRegistration.current = null;
+      }).catch(() => {});
+    }
+    return pushRegistration.current;
+  }
 
   useEffect(() => {
     if (!supabase) {
@@ -101,6 +130,19 @@ export default function CookHomePage() {
   }, [supabase]);
 
   useEffect(() => {
+    if (!supabase || !cookProfileId) return;
+    if (!Capacitor.isNativePlatform() && (typeof Notification === "undefined" || Notification.permission !== "granted")) return;
+
+    let cancelled = false;
+    void registerDevice(supabase).then(() => {
+      if (!cancelled) setPushEnabled(true);
+    }).catch((error) => {
+      if (!cancelled) setPushError(error instanceof Error ? error.message : "Unable to register this device.");
+    });
+    return () => { cancelled = true; };
+  }, [supabase, cookProfileId]);
+
+  useEffect(() => {
     return () => {
       if (noticeTimer.current) clearTimeout(noticeTimer.current);
     };
@@ -135,19 +177,7 @@ export default function CookHomePage() {
     setPushSaving(true);
     setPushError("");
     try {
-      const { getFCMToken } = await import("@/lib/firebase-messaging");
-      const token = await getFCMToken();
-      if (!token) throw new Error(typeof Notification !== "undefined" && Notification.permission === "denied" ? "Notifications are blocked. Enable them in your browser settings." : "Unable to enable notifications on this device.");
-
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.access_token) throw new Error("Please sign in again to enable notifications.");
-      const response = await fetch("/api/cook/push-device", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ pushToken: token, platform: Capacitor.getPlatform() === "android" ? "android" : "web" }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Unable to register this device.");
+      await registerDevice(supabase);
       setPushEnabled(true);
       setPushPromptOpen(false);
       setNotice("Notifications enabled on this device.");
