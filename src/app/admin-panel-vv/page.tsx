@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
     Bell, Check, ChevronDown, ChevronRight, ChefHat, CircleHelp, Coffee, Edit3,
-    FileText, Filter, MoreHorizontal, Plus, Search, ShoppingBasket, Soup,
-    Trash2, Utensils, UsersRound, X,
+    Download, ExternalLink, FileText, Filter, MapPin, MoreHorizontal, Plus, Search, ShoppingBasket, Soup,
+    RotateCcw, Trash2, Utensils, UsersRound, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import RequestLoader from "@/components/RequestLoader";
+import AdminLocations from "@/components/AdminLocations";
 
 type Dish = {
     id: string;
@@ -63,7 +64,7 @@ export default function AdminPanelPage() {
     const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [activeSection, setActiveSection] = useState<"dishes" | "cooks">("dishes");
+    const [activeSection, setActiveSection] = useState<"dishes" | "cooks" | "locations">("dishes");
     const [cooks, setCooks] = useState<Cook[]>([]);
     const [cookDocuments, setCookDocuments] = useState<CookDocument[]>([]);
     const [selectedCookId, setSelectedCookId] = useState<string | null>(null);
@@ -191,7 +192,7 @@ export default function AdminPanelPage() {
         <main className="admin-panel-page">
             <aside className="admin-sidebar">
                 <div className="admin-brand"><span className="admin-brand-mark"><ChefHat /></span><span><strong>Vantavaru</strong><small>Admin Panel</small></span></div>
-                <nav className="admin-nav" aria-label="Admin navigation"><button className={`admin-nav-item ${activeSection === "dishes" ? "active" : ""}`} onClick={() => setActiveSection("dishes")}><Utensils /> Dishes</button><button className={`admin-nav-item ${activeSection === "cooks" ? "active" : ""}`} onClick={() => setActiveSection("cooks")}><ChefHat /> Cooks</button></nav>
+                <nav className="admin-nav" aria-label="Admin navigation"><button className={`admin-nav-item ${activeSection === "dishes" ? "active" : ""}`} onClick={() => setActiveSection("dishes")}><Utensils /> Dishes</button><button className={`admin-nav-item ${activeSection === "cooks" ? "active" : ""}`} onClick={() => setActiveSection("cooks")}><ChefHat /> Cooks</button><button className={`admin-nav-item ${activeSection === "locations" ? "active" : ""}`} onClick={() => setActiveSection("locations")}><MapPin /> Locations</button></nav>
                 <div className="admin-sidebar-footer"><CircleHelp /><span><strong>Good food</strong><small>brings people together</small></span></div>
             </aside>
             <section className="admin-workspace">
@@ -205,7 +206,7 @@ export default function AdminPanelPage() {
                                 <section className="dish-table-panel"><div className="dish-table-heading"><h2>Dishes in {activeMealType} <span>({filteredDishes.length})</span></h2><div className="dish-tools"><label><Search /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search dishes..." />{searchTerm && <button onClick={() => setSearchTerm("")} aria-label="Clear search"><X /></button>}</label><button className="filter-button"><Filter /> Filter</button></div></div><div className="dish-table-wrap">{loading ? <p className="admin-table-message">Loading dishes...</p> : <table><thead><tr><th>#</th><th>Dish Name</th><th>Description</th><th>Category</th><th>Preparation Cost<br />(₹/person)</th><th>Status</th><th>Actions</th></tr></thead><tbody>{filteredDishes.map((dish, index) => <tr key={dish.id} className={selectedDish?.id === dish.id ? "selected-row" : ""} onClick={() => setSelectedDishId(dish.id)}><td>{index + 1}</td><td><strong>{dish.name}</strong></td><td>{dish.description}</td><td>{dish.category || "-"}</td><td>₹{dish.preparationCost}</td><td><span className={`status-pill ${dish.isActive ? "" : "inactive"}`}>{dish.isActive ? "Active" : "Inactive"}</span></td><td><div className="table-actions"><button aria-label={`Edit ${dish.name}`}><Edit3 /></button><button aria-label={`More actions for ${dish.name}`}><MoreHorizontal /></button></div></td></tr>)}</tbody></table>}</div></section>
                                 {selectedDish && <EditDish key={selectedDish.id} dish={selectedDish} mealTypes={mealTypes} ingredients={ingredients} dishIngredients={selectedIngredients} onSave={saveSelectedDish} />}
                             </div>
-                        </div></> : <CooksSection cooks={cooks} documents={cookDocuments} counts={cookCounts} selectedCook={selectedCook} selectedCookId={selectedCookId} openMenu={openCookMenu} rejectionReason={rejectionReason} onSelect={setSelectedCookId} onMenu={setOpenCookMenu} onReason={setRejectionReason} onStatus={updateCookStatus} />}
+                        </div></> : activeSection === "cooks" ? <CooksSection cooks={cooks} documents={cookDocuments} counts={cookCounts} selectedCook={selectedCook} selectedCookId={selectedCookId} openMenu={openCookMenu} rejectionReason={rejectionReason} onSelect={setSelectedCookId} onMenu={setOpenCookMenu} onReason={setRejectionReason} onStatus={updateCookStatus} /> : <AdminLocations />}
                 </div>
             </section>
             {notice && <div className="admin-toast" role="status">{notice}</div>}
@@ -225,9 +226,51 @@ function CooksSection({ cooks, documents, counts, selectedCook, selectedCookId, 
         <div className="admin-heading-row"><div><div className="admin-breadcrumb">Cooks <ChevronRight /> <strong>Manage Cooks</strong></div><h1>Manage Cooks</h1><p>Review registrations, verify documents and manage cook approvals.</p></div><button className="admin-primary-button"><Plus /> Add Cook</button></div>
         <div className="cook-stat-cards"><CookStat icon={UsersRound} label="Total Cooks" value={counts.all} tone="blue" /><CookStat icon={Soup} label="Pending Review" value={counts.pending} tone="amber" /><CookStat icon={Check} label="Approved" value={counts.approved} tone="green" /><CookStat icon={X} label="Rejected" value={counts.rejected} tone="red" /></div>
         <div className="cook-management-layout"><section className="cook-list-panel"><div className="cook-list-tabs"><button className="active">All ({counts.all})</button><button>Pending ({counts.pending})</button><button>Approved ({counts.approved})</button><button>Rejected ({counts.rejected})</button><label><Search /><input placeholder="Search cooks..." /></label><button className="filter-button"><Filter /> Filter</button></div><div className="cook-table-wrap"><table><thead><tr><th>Cook</th><th>Phone</th><th>Location</th><th>Experience</th><th>Submitted</th><th>Status</th><th>Documents</th><th>Actions</th></tr></thead><tbody>{cooks.map((cook) => { const cookDocs = documents.filter((document) => document.cookId === cook.id); return <tr key={cook.id} className={selectedCookId === cook.id ? "selected-row" : ""} onClick={() => onSelect(cook.id)}><td><strong>{cook.fullName}</strong></td><td>{cook.phone || "-"}</td><td>{cook.city || "-"}</td><td>{cook.experience || "-"}</td><td>{formatDate(cook.submittedAt)}</td><td><span className={`cook-status-pill ${cook.status}`}>{capitalize(cook.status)}</span></td><td>{cookDocs.length} uploaded</td><td><div className="cook-row-actions"><button className="cook-review-button" onClick={(event) => { event.stopPropagation(); onSelect(cook.id); }}>Review</button><button aria-label={`Actions for ${cook.fullName}`} onClick={(event) => { event.stopPropagation(); onMenu(openMenu === cook.id ? null : cook.id); }}><MoreHorizontal /></button>{openMenu === cook.id && <div className="cook-action-menu"><button onClick={() => void onStatus(cook.id, "approved")}><Check /> Approve Cook</button><button onClick={() => void onStatus(cook.id, "rejected")}><X /> Reject Cook</button></div>}</div></td></tr>; })}</tbody></table>{cooks.length === 0 && <p className="admin-table-message">No cooks found.</p>}</div></section>
-            {selectedCook && <aside className="cook-review-panel"><div className="cook-review-header"><div><h2>Cook Review</h2><p>Review cook details and documents.</p></div><button aria-label="Close cook review" onClick={() => onSelect("")}><X /></button></div><ReviewBlock title="Profile Information"><Detail label="Full Name" value={selectedCook.fullName} /><Detail label="Phone" value={selectedCook.phone || "-"} /><Detail label="Date of Birth" value={selectedCook.dateOfBirth || "-"} /><Detail label="Gender" value={selectedCook.gender || "-"} /><Detail label="Cooking Experience" value={selectedCook.experience || "-"} /><Detail label="Cuisines" value={selectedCook.cuisines.join(", ") || "-"} /><Detail label="Languages" value={selectedCook.languages.join(", ") || "-"} /><Detail label="Service Radius" value={`${selectedCook.serviceRadius} km`} /></ReviewBlock><ReviewBlock title="Address"><Detail label="Flat / House No." value={selectedCook.address || "-"} /><Detail label="City" value={selectedCook.city || "-"} /><Detail label="Pincode" value={selectedCook.pincode || "-"} /><Detail label="Landmark" value={selectedCook.landmark || "-"} /></ReviewBlock><ReviewBlock title="Documents"><div className="cook-document-list">{selectedDocuments.length ? selectedDocuments.map((document) => <div key={document.id}><FileText /><span>{document.documentType.replace(/_/g, " ")}</span><b>{capitalize(document.status)}</b></div>) : <p>No documents uploaded.</p>}</div></ReviewBlock><div className="cook-review-reason"><label>Rejection Reason <small>(required if rejecting)</small><textarea value={rejectionReason} onChange={(event) => onReason(event.target.value)} placeholder="Enter reason for rejection..." /></label></div><div className="cook-review-actions"><button className="cook-reject-button" onClick={() => void onStatus(selectedCook.id, "rejected")}><X /> Reject</button><button className="cook-approve-button" onClick={() => void onStatus(selectedCook.id, "approved")}><Check /> Approve Cook</button></div></aside>}
+            {selectedCook && <aside className="cook-review-panel"><div className="cook-review-header"><div><h2>Cook Review</h2><p>Review cook details and documents.</p></div><button aria-label="Close cook review" onClick={() => onSelect("")}><X /></button></div><ReviewBlock title="Profile Information"><Detail label="Full Name" value={selectedCook.fullName} /><Detail label="Phone" value={selectedCook.phone || "-"} /><Detail label="Date of Birth" value={selectedCook.dateOfBirth || "-"} /><Detail label="Gender" value={selectedCook.gender || "-"} /><Detail label="Cooking Experience" value={selectedCook.experience || "-"} /><Detail label="Cuisines" value={selectedCook.cuisines.join(", ") || "-"} /><Detail label="Languages" value={selectedCook.languages.join(", ") || "-"} /><Detail label="Service Radius" value={`${selectedCook.serviceRadius} km`} /></ReviewBlock><ReviewBlock title="Address"><Detail label="Flat / House No." value={selectedCook.address || "-"} /><Detail label="City" value={selectedCook.city || "-"} /><Detail label="Pincode" value={selectedCook.pincode || "-"} /><Detail label="Landmark" value={selectedCook.landmark || "-"} /></ReviewBlock><ReviewBlock title="Documents"><AdminCookDocuments documents={selectedDocuments} /></ReviewBlock><div className="cook-review-reason"><label>Rejection Reason <small>(required if rejecting)</small><textarea value={rejectionReason} onChange={(event) => onReason(event.target.value)} placeholder="Enter reason for rejection..." /></label></div><div className="cook-review-actions"><button className="cook-reject-button" onClick={() => void onStatus(selectedCook.id, "rejected")}><X /> Reject</button><button className="cook-approve-button" onClick={() => void onStatus(selectedCook.id, "approved")}><Check /> Approve Cook</button></div></aside>}
         </div>
     </div>;
+}
+
+function AdminCookDocuments({ documents }: { documents: CookDocument[] }) {
+    const supabase = getSupabaseBrowserClient();
+    const [selectedDocument, setSelectedDocument] = useState<CookDocument | null>(null);
+    const [signedUrl, setSignedUrl] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [zoom, setZoom] = useState(1);
+
+    async function viewDocument(document: CookDocument) {
+        if (!supabase) return;
+        setSelectedDocument(document);
+        setSignedUrl("");
+        setError("");
+        setZoom(1);
+        setLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) throw new Error("Please sign in again to view documents.");
+            const response = await fetch(`/api/admin/cook-documents?documentId=${encodeURIComponent(document.id)}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+            const result = await response.json();
+            if (!response.ok || !result.signedUrl) throw new Error(result.error || "Unable to open this document.");
+            setSignedUrl(result.signedUrl as string);
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Unable to open this document.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const filePath = selectedDocument?.filePath.split(/[?#]/, 1)[0].toLowerCase() ?? "";
+    const extension = filePath.split(".").pop() ?? "";
+    const imageFile = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff"].includes(extension);
+    const pdfFile = extension === "pdf";
+    const zoomable = imageFile || pdfFile;
+    const changeZoom = (amount: number) => setZoom((current) => Math.max(0.5, Math.min(2, Math.round((current + amount) * 100) / 100)));
+
+    return <>
+        <div className="cook-document-list">{documents.length ? documents.map((document) => <div key={document.id}><FileText /><span>{document.documentType.replace(/_/g, " ")}</span><b>{capitalize(document.status)}</b><button className="cook-document-view-button" onClick={() => void viewDocument(document)}>View</button></div>) : <p>No documents uploaded.</p>}</div>
+        {selectedDocument && <div className="cook-document-modal-backdrop" role="presentation" onMouseDown={() => { setSelectedDocument(null); setSignedUrl(""); setError(""); }}><section className="cook-document-modal" role="dialog" aria-modal="true" aria-labelledby="admin-document-title" onMouseDown={(event) => event.stopPropagation()}><header className="cook-document-modal-header"><span className="cook-document-modal-icon"><FileText /></span><div><h2 id="admin-document-title">{selectedDocument.documentType.replace(/_/g, " ")}</h2><p>{capitalize(selectedDocument.status)}</p></div>{zoomable && signedUrl && !loading && <div className="cook-document-zoom-controls"><button aria-label="Zoom out" title="Zoom out" disabled={zoom <= 0.5} onClick={() => changeZoom(-0.25)}><ZoomOut /></button><span>{Math.round(zoom * 100)}%</span><button aria-label="Zoom in" title="Zoom in" disabled={zoom >= 2} onClick={() => changeZoom(0.25)}><ZoomIn /></button><button aria-label="Reset zoom" title="Reset zoom" disabled={zoom === 1} onClick={() => setZoom(1)}><RotateCcw /></button></div>}<button className="cook-document-close" aria-label="Close document preview" onClick={() => { setSelectedDocument(null); setSignedUrl(""); setError(""); }}><X /></button></header>{error && <p className="cook-document-error cook-document-modal-error" role="alert">{error}</p>}{loading ? <div className="cook-document-state">Preparing secure preview...</div> : signedUrl && imageFile ? <div className="cook-document-preview-image"><img style={{ width: `${zoom * 100}%` }} src={signedUrl} alt={selectedDocument.documentType.replace(/_/g, " ")} /></div> : signedUrl && pdfFile ? <iframe className="cook-document-preview-frame" title={selectedDocument.documentType} src={`${signedUrl}#zoom=${Math.round(zoom * 100)}`} /> : signedUrl ? <div className="cook-document-preview-fallback"><FileText /><p>Preview is unavailable for this file type.</p><a href={signedUrl} target="_blank" rel="noreferrer"><ExternalLink /> Open document</a><a href={signedUrl} download><Download /> Download document</a></div> : null}</section></div>}
+    </>;
 }
 
 function CookStat({ icon: Icon, label, value, tone }: { icon: typeof UsersRound; label: string; value: number; tone: string }) { return <div className={`cook-stat-card ${tone}`}><span><Icon /></span><div><small>{label}</small><strong>{value}</strong></div></div>; }

@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAppEntryRoute } from "@/lib/auth/routing";
 import {
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronRight,
   Clock3,
@@ -18,6 +19,7 @@ import {
   LifeBuoy,
   LoaderCircle,
   MapPin,
+  Plus,
   Settings,
   UserRound,
   UsersRound,
@@ -46,6 +48,21 @@ type UpcomingBooking = {
   cookName: string | null;
 };
 
+type CustomerAddress = {
+  id: string;
+  society_id: string;
+  label: string | null;
+  flat_number: string | null;
+  tower_block: string | null;
+  address_line: string | null;
+  landmark: string | null;
+  is_default: boolean;
+  society: string;
+  area: string;
+  city: string;
+  pincode: string | null;
+};
+
 export default function Home() {
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
@@ -53,6 +70,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("Home");
   const [selectedTime, setSelectedTime] = useState("1 Hour");
   const [locationOpen, setLocationOpen] = useState(false);
+  const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [addressLoading, setAddressLoading] = useState(true);
+  const [addressError, setAddressError] = useState("");
   const [bookingMessage, setBookingMessage] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
   const [upcomingBooking, setUpcomingBooking] = useState<UpcomingBooking | null>(null);
@@ -76,6 +97,7 @@ export default function Home() {
   useEffect(() => {
     if (!supabase) {
       setBookingLoading(false);
+      setAddressLoading(false);
       return;
     }
 
@@ -143,9 +165,79 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [supabase]);
 
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    const client = supabase;
+
+    async function loadCustomerAddresses() {
+      const { data: { user }, error: authError } = await client.auth.getUser();
+      if (authError || !user) {
+        if (!cancelled) setAddressLoading(false);
+        return;
+      }
+
+      const { data: addressRows, error: addressQueryError } = await client
+        .from("customer_addresses")
+        .select("id, society_id, label, flat_number, tower_block, address_line, landmark, is_default")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (addressQueryError) {
+        if (!cancelled) {
+          setAddressError("Saved addresses could not be loaded.");
+          setAddressLoading(false);
+        }
+        return;
+      }
+
+      const rows = addressRows ?? [];
+      const societyIds = [...new Set(rows.map((row) => row.society_id))];
+      const { data: societyRows, error: societyError } = societyIds.length
+        ? await client.from("societies").select("id, name, pincode, area_id").in("id", societyIds)
+        : { data: [], error: null };
+      const areaIds = [...new Set((societyRows ?? []).map((row) => row.area_id))];
+      const { data: areaRows, error: areaError } = areaIds.length
+        ? await client.from("areas").select("id, name, city_id").in("id", areaIds)
+        : { data: [], error: null };
+      const cityIds = [...new Set((areaRows ?? []).map((row) => row.city_id))];
+      const { data: cityRows, error: cityError } = cityIds.length
+        ? await client.from("cities").select("id, name").in("id", cityIds)
+        : { data: [], error: null };
+
+      if (cancelled) return;
+      if (societyError || areaError || cityError) setAddressError("Some saved address details could not be loaded.");
+      const societyById = new Map((societyRows ?? []).map((row) => [row.id, row]));
+      const areaById = new Map((areaRows ?? []).map((row) => [row.id, row]));
+      const cityById = new Map((cityRows ?? []).map((row) => [row.id, row]));
+      const mapped = rows.map((row) => {
+        const society = societyById.get(row.society_id);
+        const area = society ? areaById.get(society.area_id) : null;
+        const city = area ? cityById.get(area.city_id) : null;
+        return {
+          ...row,
+          society: society?.name ?? "Society",
+          area: area?.name ?? "Area",
+          city: city?.name ?? "City",
+          pincode: society?.pincode ?? null,
+        };
+      }) as CustomerAddress[];
+      setCustomerAddresses(mapped);
+      setSelectedAddressId((current) => current && mapped.some((address) => address.id === current) ? current : mapped.find((address) => address.is_default)?.id ?? mapped[0]?.id ?? "");
+      setAddressLoading(false);
+    }
+
+    void loadCustomerAddresses();
+    return () => { cancelled = true; };
+  }, [supabase]);
+
   if (!authResolved) {
     return <main className="auth-route-loading" aria-label="Checking your account" />;
   }
+
+  const selectedAddress = customerAddresses.find((address) => address.id === selectedAddressId) ?? null;
 
   function bookCook() {
     window.sessionStorage.removeItem(bookingDraftStorageKey);
@@ -171,9 +263,17 @@ export default function Home() {
           <button className="profile-button" aria-label="Open profile"><UserRound /></button>
         </header>
 
-        <button className={`location-bar ${locationOpen ? "location-bar-open" : ""}`} onClick={() => setLocationOpen(!locationOpen)} aria-expanded={locationOpen}>
-          <MapPin className="location-icon" aria-hidden="true" /><span>{locationOpen ? "Choose your neighbourhood" : "Hitech City, Hyderabad"}</span>{locationOpen ? <ChevronDown className="location-arrow location-arrow-open" aria-hidden="true" /> : <ChevronRight className="location-arrow" aria-hidden="true" />}
-        </button>
+        <div className="home-address-picker">
+          <button className={`location-bar ${locationOpen ? "location-bar-open" : ""}`} onClick={() => setLocationOpen(!locationOpen)} aria-expanded={locationOpen}>
+            <MapPin className="location-icon" aria-hidden="true" />
+            <span className="home-address-label">{addressLoading ? "Loading saved addresses..." : selectedAddress ? <><strong>{selectedAddress.label || "Home"}</strong><small>{addressSummary(selectedAddress)}</small></> : addressError || "Add your delivery address"}</span>
+            {locationOpen ? <ChevronDown className="location-arrow location-arrow-open" aria-hidden="true" /> : <ChevronRight className="location-arrow" aria-hidden="true" />}
+          </button>
+          {locationOpen && <div className="home-address-menu" role="listbox" aria-label="Saved addresses">
+            {customerAddresses.map((address) => <button type="button" role="option" aria-selected={selectedAddressId === address.id} className={selectedAddressId === address.id ? "selected" : ""} key={address.id} onClick={() => { setSelectedAddressId(address.id); setLocationOpen(false); }}><span className="home-address-menu-label"><strong>{address.label || "Home"}</strong>{selectedAddressId === address.id && <Check />}</span><small>{addressSummary(address)}</small></button>)}
+            <button type="button" className="home-address-add" onClick={() => router.push("/customer-addresses/new")}><Plus /> Add new address</button>
+          </div>}
+        </div>
 
         <section className="hero-panel">
           <div className="hero-copy">
@@ -228,4 +328,8 @@ function addBookingMinutes(value: string, minutes: number) {
   const time = new Date("2026-01-01T00:00:00");
   time.setHours(Number(hours), Number(mins) + minutes, 0, 0);
   return time.toTimeString().slice(0, 8);
+}
+
+function addressSummary(address: CustomerAddress) {
+  return [address.flat_number, address.tower_block, address.society, address.area, address.city, address.pincode].filter(Boolean).join(", ");
 }
