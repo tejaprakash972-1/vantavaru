@@ -20,7 +20,7 @@ type MealType = { id: string; name: string; sortOrder: number };
 type Dish = { id: string; name: string; mealTypeId: string; preparationCostPerPerson: number };
 type SelectedDishes = Record<string, string[]>;
 type BookingFees = { cookFee: number; platformFee: number };
-type BookingDraft = { bookingId?: string | null; duration: string; bookingDate: string; bookingTime: string; people: number; selectedMeals: string[]; selectedDishes: SelectedDishes; notes: string };
+type BookingDraft = { bookingId?: string | null; addressId?: string; duration: string; bookingDate: string; bookingTime: string; people: number; selectedMeals: string[]; selectedDishes: SelectedDishes; notes: string };
 
 const bookingDraftStorageKey = "vantavaru-review-return-draft";
 
@@ -33,6 +33,7 @@ function BookPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const bookingId = searchParams.get("bookingId");
+    const [addressId, setAddressId] = useState(searchParams.get("addressId") ?? "");
     const requestedDuration = searchParams.get("duration");
     const hasRequestedDuration = requestedDuration === "1 Hour" || requestedDuration === "2 Hours";
     const initialDuration = hasRequestedDuration ? requestedDuration : "1 Hour";
@@ -55,6 +56,25 @@ function BookPageContent() {
     const [dateTimeNotice, setDateTimeNotice] = useState("");
     const [notes, setNotes] = useState("");
     const [ingredientsOpen, setIngredientsOpen] = useState(false);
+    useEffect(() => {
+        if (!supabase || bookingId || addressId) return;
+        let cancelled = false;
+        async function loadDefaultAddress() {
+            const { data: { user } } = await supabase!.auth.getUser();
+            if (!user) return;
+            const { data: addresses } = await supabase!.from("customer_addresses")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("is_active", true)
+                .order("is_default", { ascending: false })
+                .order("created_at", { ascending: false })
+                .limit(1);
+            if (!cancelled && addresses?.[0]) setAddressId(addresses[0].id);
+        }
+        void loadDefaultAddress();
+        return () => { cancelled = true; };
+    }, [supabase, bookingId, addressId]);
+
     useEffect(() => {
         const storedDraft = window.sessionStorage.getItem(bookingDraftStorageKey);
         if (!storedDraft) {
@@ -105,7 +125,7 @@ function BookPageContent() {
 
             const { data: booking, error: bookingError } = await client
                 .from("bookings")
-                .select("id, customer_id, booking_date, booking_time, duration_minutes, people_count, status, cook_profile_id, customer_notes")
+                .select("id, customer_id, customer_address_id, booking_date, booking_time, duration_minutes, people_count, status, cook_profile_id, customer_notes")
                 .eq("id", bookingId)
                 .eq("customer_id", user.id)
                 .maybeSingle();
@@ -125,6 +145,8 @@ function BookPageContent() {
                 }
                 return;
             }
+
+            setAddressId(booking.customer_address_id ?? "");
 
             const storedDraft = window.sessionStorage.getItem(bookingDraftStorageKey);
             if (storedDraft) {
@@ -273,6 +295,10 @@ function BookPageContent() {
     }
 
     function continueToReview() {
+        if (!bookingId && !addressId) {
+            setDateTimeError("Add a saved address before continuing. Return to Home to select one.");
+            return;
+        }
         if (!bookingDate || bookingDate < minimumBookingDate) {
             setDateTimeError(`Choose ${minimumBookingDate} or a later date.`);
             return;
@@ -282,7 +308,7 @@ function BookPageContent() {
             return;
         }
         setDateTimeError("");
-        const draft: BookingDraft = { bookingId, duration, bookingDate, bookingTime, people, selectedMeals, selectedDishes, notes };
+        const draft: BookingDraft = { bookingId, addressId, duration, bookingDate, bookingTime, people, selectedMeals, selectedDishes, notes };
         window.sessionStorage.setItem(bookingDraftStorageKey, JSON.stringify(draft));
         const params = new URLSearchParams({
             date: bookingDate,
@@ -295,6 +321,7 @@ function BookPageContent() {
             price: String(price),
         });
         if (bookingId) params.set("bookingId", bookingId);
+        if (addressId) params.set("addressId", addressId);
         router.push(`/reviewBooking?${params.toString()}`);
     }
 

@@ -240,16 +240,24 @@ export default function Home() {
   const selectedAddress = customerAddresses.find((address) => address.id === selectedAddressId) ?? null;
 
   function bookCook() {
+    if (!selectedAddress) {
+      setBookingMessage("Select or add an address before booking.");
+      return;
+    }
     window.sessionStorage.removeItem(bookingDraftStorageKey);
     setIsNavigating(true);
-    router.push(`/book?duration=${encodeURIComponent(selectedTime)}`);
+    router.push(`/book?duration=${encodeURIComponent(selectedTime)}&addressId=${encodeURIComponent(selectedAddress.id)}`);
   }
 
   function chooseCookingTime(duration: string) {
+    if (!selectedAddress) {
+      setBookingMessage("Select or add an address before booking.");
+      return;
+    }
     window.sessionStorage.removeItem(bookingDraftStorageKey);
     setSelectedTime(duration);
     setIsNavigating(true);
-    router.push(`/book?duration=${encodeURIComponent(duration)}`);
+    router.push(`/book?duration=${encodeURIComponent(duration)}&addressId=${encodeURIComponent(selectedAddress.id)}`);
   }
 
   return (

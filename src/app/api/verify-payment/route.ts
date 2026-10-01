@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 type BookingDetails = {
+    addressId: string;
     date: string;
     time: string;
     duration: string;
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: "Payment verification failed." }, { status: 400 });
     }
 
-    if (!booking?.date || !booking.time || !booking.duration || !Number.isFinite(booking.people) || !Number.isFinite(booking.price) || !Number.isFinite(booking.platformFee) || !Number.isFinite(booking.cookFee) || !Array.isArray(booking.meals) || !booking.dishes || typeof booking.dishes !== "object") {
+    if (typeof booking?.addressId !== "string" || !booking.addressId || !booking.date || !booking.time || !booking.duration || !Number.isFinite(booking.people) || !Number.isFinite(booking.price) || !Number.isFinite(booking.platformFee) || !Number.isFinite(booking.cookFee) || !Array.isArray(booking.meals) || !booking.dishes || typeof booking.dishes !== "object") {
         return NextResponse.json({ success: false, error: "Missing booking details." }, { status: 400 });
     }
 
@@ -61,10 +62,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: "You must be signed in to create a booking." }, { status: 401 });
     }
 
+    const { data: address, error: addressError } = await supabase.from("customer_addresses")
+        .select("id")
+        .eq("id", booking.addressId)
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+    if (addressError || !address) {
+        return NextResponse.json({ success: false, error: "The selected address is no longer available. Please choose a saved address." }, { status: 400 });
+    }
+
     const { data: createdBooking, error: bookingError } = await supabase
         .from("bookings")
         .insert({
             customer_id: user.id,
+            customer_address_id: address.id,
             booking_date: booking.date,
             booking_time: booking.time,
             people_count: booking.people,

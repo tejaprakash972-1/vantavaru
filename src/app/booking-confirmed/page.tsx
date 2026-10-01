@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getCustomerAddressSummary } from "@/lib/customer-address";
 import RequestLoader from "@/components/RequestLoader";
 import {
     ArrowLeft,
@@ -16,6 +17,7 @@ import {
     Edit3,
     House,
     Hourglass,
+    MapPin,
     MessageSquareText,
     MoreHorizontal,
     ShieldCheck,
@@ -26,6 +28,7 @@ import {
 
 type Booking = {
     id: string;
+    customer_address_id: string | null;
     cook_profile_id: string | null;
     booking_date: string;
     booking_time: string;
@@ -54,6 +57,7 @@ function BookingConfirmedContent() {
     const supabase = getSupabaseBrowserClient();
     const bookingId = searchParams.get("bookingId");
     const [booking, setBooking] = useState<Booking | null>(null);
+    const [serviceAddress, setServiceAddress] = useState("");
     const [mealGroups, setMealGroups] = useState<MealGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -71,12 +75,17 @@ function BookingConfirmedContent() {
         async function loadBooking() {
             const { data: bookingData, error: bookingError } = await client
                 .from("bookings")
-                .select("id, cook_profile_id, booking_date, booking_time, duration_minutes, people_count, status, payment_status, platform_fee, cook_fee, total_amount, customer_notes, razorpay_payment_id, start_otp, completion_otp")
+                .select("id, customer_address_id, cook_profile_id, booking_date, booking_time, duration_minutes, people_count, status, payment_status, platform_fee, cook_fee, total_amount, customer_notes, razorpay_payment_id, start_otp, completion_otp")
                 .eq("id", id)
                 .maybeSingle();
             if (bookingError || !bookingData) {
                 if (!cancelled) { setError(bookingError?.message || "This booking could not be found."); setLoading(false); }
                 return;
+            }
+
+            if (bookingData.customer_address_id) {
+                const summary = await getCustomerAddressSummary(client, bookingData.customer_address_id).catch(() => null);
+                if (!cancelled) setServiceAddress(summary ?? "");
             }
 
             const { data: mealLinks, error: mealError } = await client.from("booking_meals").select("meal_type_id").eq("booking_id", id);
@@ -176,6 +185,7 @@ function BookingConfirmedContent() {
                 <DetailRow icon={CalendarDays} label="Date" value={formatDate(date)} />
                 <DetailRow icon={Clock3} label="Time" value={formatTime(time)} />
                 <DetailRow icon={UsersRound} label="People" value={`${people} ${people === 1 ? "person" : "people"}`} />
+                {booking.customer_address_id && <DetailRow icon={MapPin} label="Service Address" value={serviceAddress || "Address unavailable"} />}
                 <DetailRow icon={Clock3} label="Duration" value={duration} />
                 <DetailRow icon={MessageSquareText} label="Your Notes" value={booking.customer_notes || "No additional notes"} />
                 <div className="confirmed-status"><span className="status-dot" /><div><strong>Status</strong><small>{statusDescription}</small></div><b>{formatStatus(booking.status)}</b></div>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { IngredientsPanel } from "../../components/IngredientsPanel";
 import RequestLoader from "@/components/RequestLoader";
+import { getCustomerAddressSummary } from "@/lib/customer-address";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
     ArrowLeft,
@@ -16,6 +17,7 @@ import {
     FileText,
     Info,
     List,
+    MapPin,
     ShieldCheck,
     UsersRound,
 } from "lucide-react";
@@ -49,6 +51,7 @@ function ReviewBookingContent() {
     const [platformFee, setPlatformFee] = useState(0);
     const [reviewDataLoading, setReviewDataLoading] = useState(true);
     const [reviewDataError, setReviewDataError] = useState("");
+    const [addressSummary, setAddressSummary] = useState("");
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [orderError, setOrderError] = useState("");
@@ -57,6 +60,7 @@ function ReviewBookingContent() {
     const time = searchParams.get("time") || "10:00";
     const duration = searchParams.get("duration") || "1 Hour";
     const bookingId = searchParams.get("bookingId");
+    const addressId = searchParams.get("addressId") ?? "";
     const people = Number(searchParams.get("people") || 4);
     const meals = useMemo(() => (searchParams.get("meals") || "").split(",").filter(Boolean) as MealKey[], [searchParams]);
     const notes = searchParams.get("notes") || "";
@@ -79,13 +83,16 @@ function ReviewBookingContent() {
                 return;
             }
 
-            const [mealResult, feeResult] = await Promise.all([
+            const [mealResult, feeResult, addressSummaryResult] = await Promise.all([
                 meals.length > 0 ? supabase.from("meal_types").select("id, name").in("id", meals) : Promise.resolve({ data: [], error: null }),
                 supabase.from("app_settings").select("value").eq("key", "platform_fee").maybeSingle(),
+                addressId ? getCustomerAddressSummary(supabase, addressId).catch(() => null) : Promise.resolve(null),
             ]);
             if (!cancelled) {
                 const requestError = mealResult.error || feeResult.error;
                 if (requestError) setReviewDataError(requestError.message);
+                if (!bookingId && !addressSummaryResult) setReviewDataError("Selected address could not be loaded.");
+                setAddressSummary(addressSummaryResult ?? "");
                 setMealNames(Object.fromEntries((mealResult.data ?? []).map((meal) => [meal.id, meal.name])));
                 setPlatformFee(Number(feeResult.data?.value ?? 0));
                 setReviewDataLoading(false);
@@ -94,7 +101,7 @@ function ReviewBookingContent() {
 
         void loadReviewData();
         return () => { cancelled = true; };
-    }, [meals, supabase]);
+    }, [meals, supabase, addressId, bookingId]);
 
     function getMealName(mealId: string) {
         return mealNames[mealId] ?? "Loading meal...";
@@ -122,7 +129,7 @@ function ReviewBookingContent() {
                 },
                 body: JSON.stringify({
                     ...response,
-                    booking: { date, time, duration, people, price: totalAmount, platformFee, cookFee: balanceToCook, meals, dishes: selectedDishes },
+                    booking: { date, time, duration, people, price: totalAmount, platformFee, cookFee: balanceToCook, meals, dishes: selectedDishes, addressId },
                 }),
             });
             const result = await verifyResponse.json();
@@ -175,8 +182,24 @@ function ReviewBookingContent() {
             return;
         }
 
+        if (!addressId || !addressSummary) {
+            setOrderError("Choose a saved address on Home before paying.");
+            return;
+        }
+
         setIsCreatingOrder(true);
         try {
+            if (!supabase) throw new Error("Please sign in again before paying.");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Please sign in again before paying.");
+            const { data: activeAddress, error: addressError } = await supabase.from("customer_addresses")
+                .select("id")
+                .eq("id", addressId)
+                .eq("user_id", user.id)
+                .eq("is_active", true)
+                .maybeSingle();
+            if (addressError || !activeAddress) throw new Error("The selected address is no longer available. Choose a saved address on Home.");
+
             const response = await fetch("/api/create-order", { method: "POST" });
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Failed to create order.");
@@ -220,6 +243,7 @@ function ReviewBookingContent() {
                     <ReviewCard icon={CalendarDays} label="Date"><strong>{formattedDate}</strong></ReviewCard>
                     <ReviewCard icon={Clock3} label="Time & Duration"><strong>{formattedTime} – {endTime} ({duration})</strong></ReviewCard>
                     <ReviewCard icon={UsersRound} label="Number of People"><strong>{people} {people === 1 ? "person" : "people"}</strong></ReviewCard>
+                    {!bookingId && <ReviewCard icon={MapPin} label="Service Address"><span>{addressSummary || "No saved address selected"}</span></ReviewCard>}
                     <ReviewCard icon={ChefHat} label="Meal Time(s)"><div className="meal-pills">{meals.map((meal) => <span key={meal}>{getMealName(meal)}</span>)}</div></ReviewCard>
                     <ReviewCard icon={List} label="Selected Dishes"><div className="selected-dishes">{meals.map((meal) => <div key={meal}><strong>{getMealName(meal)}</strong><span>{selectedDishes[meal]?.join(", ") || "No dishes selected"}</span></div>)}</div></ReviewCard>
                     <ReviewCard icon={FileText} label="Additional Notes"><span>{notes || "No additional notes"}</span></ReviewCard>
