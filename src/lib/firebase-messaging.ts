@@ -5,14 +5,14 @@ import app from "./firebase";
 export async function getFCMToken(): Promise<string | null> {
     try {
         if (Capacitor.isNativePlatform()) {
-            if (Capacitor.getPlatform() !== "android") return null;
+            if (Capacitor.getPlatform() !== "android") throw new Error("Push notifications are not available on this device.");
 
             const { PushNotifications } = await import("@capacitor/push-notifications");
             let permission = await PushNotifications.checkPermissions();
             if (permission.receive !== "granted") {
                 permission = await PushNotifications.requestPermissions();
             }
-            if (permission.receive !== "granted") return null;
+            if (permission.receive !== "granted") throw new Error("Notifications are blocked. Enable them in your device settings.");
 
             let resolveToken!: (token: string) => void;
             let rejectToken!: (error: Error) => void;
@@ -36,15 +36,11 @@ export async function getFCMToken(): Promise<string | null> {
         const supported = await isSupported();
 
         if (!supported) {
-            console.log("Firebase Messaging is not supported in this browser");
-            return null;
+            throw new Error("Push notifications are not supported in this browser.");
         }
 
-        const permission = await Notification.requestPermission();
-
-        if (permission !== "granted") {
-            console.log("Notification permission was not granted");
-            return null;
+        if (Notification.permission !== "granted") {
+            throw new Error(Notification.permission === "denied" ? "Notifications are blocked. Enable them in your browser settings." : "Enable notifications to register this browser.");
         }
 
         const messaging = getMessaging(app);
@@ -60,6 +56,6 @@ export async function getFCMToken(): Promise<string | null> {
         return token;
     } catch (error) {
         console.error("Failed to get FCM token:", error);
-        return null;
+        throw error;
     }
 }

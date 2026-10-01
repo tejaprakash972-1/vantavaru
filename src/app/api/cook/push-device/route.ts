@@ -38,17 +38,12 @@ export async function POST(request: Request) {
     if (profileError) return NextResponse.json({ error: "Unable to find cook profile." }, { status: 500 });
     if (!cook) return NextResponse.json({ error: "Cook profile not found." }, { status: 403 });
 
-    const { data: existing, error: lookupError } = await database.from("cook_devices")
-        .select("id")
-        .eq("push_token", pushToken.trim())
-        .maybeSingle();
-    if (lookupError) return NextResponse.json({ error: "Unable to find device registration." }, { status: 500 });
-
     const values = { cook_profile_id: cook.id, push_token: pushToken.trim(), platform: platform ?? "web", is_active: true, last_seen_at: new Date().toISOString() };
-    const result = existing
-        ? await database.from("cook_devices").update(values).eq("id", existing.id).select("id").single()
-        : await database.from("cook_devices").insert(values).select("id").single();
-    if (result.error || !result.data) return NextResponse.json({ error: "Unable to enable notifications." }, { status: 500 });
+    const { error } = await database.from("cook_devices").upsert(values, { onConflict: "push_token" });
+    if (error) {
+        console.error("Cook device registration failed", { code: error.code, message: error.message });
+        return NextResponse.json({ error: error.code === "23505" ? "Device registration conflicts with a database constraint." : "Unable to register this device." }, { status: 500 });
+    }
 
     return NextResponse.json({ enabled: true });
 }
