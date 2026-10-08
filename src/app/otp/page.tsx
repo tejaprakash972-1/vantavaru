@@ -117,14 +117,6 @@ function OtpPageContent() {
       }
 
       if (!destination || destination === "/choose-role") destination = await waitForAuthenticatedRoute();
-      if (destination === "/cook-home" && supabase) {
-        try {
-          const { registerCookDevice } = await import("@/lib/cook/register-device");
-          await registerCookDevice(supabase);
-        } catch (registrationError) {
-          console.error("Cook device registration failed:", registrationError);
-        }
-      }
       router.replace(destination);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to verify OTP.");

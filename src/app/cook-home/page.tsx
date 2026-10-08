@@ -2,15 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Capacitor } from "@capacitor/core";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import BottomNav from "@/components/BottomNav";
-import { registerCookDevice } from "@/lib/cook/register-device";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { setCookAvailability } from "@/lib/cook/availability";
 import { useCookLanguage } from "@/lib/cook/use-language";
 import {
-  Bell,
   CalendarDays,
   ChevronRight,
   Clock3,
@@ -57,23 +53,7 @@ export default function CookHomePage() {
   const [cookStatus, setCookStatus] = useState<CookStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [statusError, setStatusError] = useState("");
-  const [pushPromptOpen, setPushPromptOpen] = useState(false);
-  const [pushSaving, setPushSaving] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushError, setPushError] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pushRegistration = useRef<Promise<void> | null>(null);
-
-  function registerDevice(client: SupabaseClient) {
-    if (!pushRegistration.current) {
-      const registration = registerCookDevice(client);
-      pushRegistration.current = registration;
-      void registration.finally(() => {
-        if (pushRegistration.current === registration) pushRegistration.current = null;
-      }).catch(() => { });
-    }
-    return pushRegistration.current;
-  }
 
   useEffect(() => {
     if (!supabase) {
@@ -117,24 +97,6 @@ export default function CookHomePage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!supabase || !cookProfileId) return;
-
-    let cancelled = false;
-    void registerDevice(supabase).then(() => {
-      if (!cancelled) {
-        setPushEnabled(true);
-        setPushError("");
-      }
-    }).catch((error) => {
-      if (!cancelled) {
-        setPushError(error instanceof Error ? error.message : "Unable to register this device.");
-        setPushPromptOpen(true);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [supabase, cookProfileId]);
-
-  useEffect(() => {
     return () => {
       if (noticeTimer.current) clearTimeout(noticeTimer.current);
     };
@@ -164,32 +126,10 @@ export default function CookHomePage() {
     }
   }
 
-  async function enableNotifications() {
-    if (!supabase || !cookProfileId || pushSaving) return;
-    setPushSaving(true);
-    setPushError("");
-    try {
-      if (!Capacitor.isNativePlatform() && typeof Notification !== "undefined" && Notification.permission !== "granted") {
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") throw new Error("Notifications are blocked. Enable them in your browser settings.");
-      }
-      await registerDevice(supabase);
-      setPushEnabled(true);
-      setPushPromptOpen(false);
-      setNotice(t("Notifications enabled on this device."));
-    } catch (error) {
-      setPushError(error instanceof Error ? error.message : "Unable to enable notifications.");
-    } finally {
-      setPushSaving(false);
-    }
-  }
-
   return (
     <>
       <main className="cook-home-page" lang={language}>
-        <header className="cook-home-header"><div className="cook-home-brand"><div className="cook-home-mark"><House /><span>♥</span></div><strong>Vantavaru</strong></div><button className="cook-notification" aria-label={t("Notifications")} aria-expanded={pushPromptOpen} onClick={() => setPushPromptOpen((open) => !open)}><Bell />{!pushEnabled && <i />}</button></header>
-
-        {pushPromptOpen && <section className="cook-push-opt-in" aria-label={t("Push notifications")}><div><strong>{t(pushEnabled ? "Notifications enabled" : "Stay updated")}</strong><p>{t(pushEnabled ? "This device is registered for cook notifications." : "Get alerts for new booking requests on this device.")}</p></div>{!pushEnabled && <button type="button" disabled={!cookProfileId || pushSaving} onClick={() => void enableNotifications()}>{t(pushSaving ? "Enabling..." : "Enable notifications")}</button>}{pushError && <p role="alert">{t(pushError)}</p>}</section>}
+        <header className="cook-home-header"><div className="cook-home-brand"><div className="cook-home-mark"><House /><span>♥</span></div><strong>Vantavaru</strong></div></header>
 
         <section className="cook-welcome"><div><h1>{t("Hello, Lakshmi!")}</h1><p>{t("Here's your cooking journey at a glance.")}</p></div><span className={`approval-pill ${cookStatus ?? "unavailable"}`} role="status"><ShieldCheck /> {t(statusLoading ? "Checking..." : cookStatus ? cookStatus.charAt(0).toUpperCase() + cookStatus.slice(1) : "Unavailable")}<small>{t(statusLoading ? "Loading profile status" : cookStatus === "approved" ? "Your profile is verified" : cookStatus === "pending" ? "Awaiting admin review" : cookStatus === "rejected" ? "Review your application" : statusError)}</small></span></section>
 
