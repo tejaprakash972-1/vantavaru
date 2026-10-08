@@ -132,6 +132,17 @@ export async function POST(request: Request) {
         }
     }
 
+    try {
+        const { error: notificationError } = await supabase.functions.invoke("notify-new-booking", {
+            body: { booking_id: createdBooking.id },
+        });
+        if (notificationError) {
+            console.error("New booking notification failed:", notificationError);
+        }
+    } catch (notificationError) {
+        console.error("New booking notification failed:", notificationError);
+    }
+
     console.log("Booking created after payment:", createdBooking);
     return NextResponse.json({ success: true, booking: createdBooking });
 }
