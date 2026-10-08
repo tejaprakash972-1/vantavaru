@@ -56,12 +56,14 @@ function createRoute({ failedTable, notificationFailure } = {}) {
             assert.ok(name in dependencies, `Unexpected dependency: ${name}`);
             return dependencies[name];
         },
-        process: { env: {
-            RAZORPAY_KEY_SECRET: "test-secret",
-            NEXT_PUBLIC_SUPABASE_URL: "https://example.invalid",
-            SUPABASE_SERVICE_ROLE_KEY: "test-key",
-        } },
-        console: { log() {}, error() {} },
+        process: {
+            env: {
+                RAZORPAY_KEY_SECRET: "test-secret",
+                NEXT_PUBLIC_SUPABASE_URL: "https://example.invalid",
+                SUPABASE_SERVICE_ROLE_KEY: "test-key",
+            }
+        },
+        console: { log() { }, error() { } },
     });
     return { route: compiledModule.exports, notifications, events };
 }

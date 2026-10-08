@@ -14,6 +14,10 @@ export function parseCookLanguage(value: unknown): CookLanguage {
 
 const translations: Record<"hi" | "te", Record<string, string>> = {
     hi: {
+        "Booking notifications": "बुकिंग सूचनाएँ",
+        "Enabling notifications...": "सूचनाएँ चालू हो रही हैं...",
+        "Unable to save notification device.": "सूचना पाने वाला उपकरण सहेजा नहीं जा सका।",
+        "Notification registration timed out.": "सूचना पंजीकरण का समय समाप्त हो गया।",
         "My Profile": "मेरी प्रोफ़ाइल",
         "Profile": "प्रोफ़ाइल",
         "Service Areas": "सेवा क्षेत्र",
@@ -294,6 +298,10 @@ const translations: Record<"hi" | "te", Record<string, string>> = {
         "Notifications are not configured.": "सूचना सेवा कॉन्फ़िगर नहीं है।",
     },
     te: {
+        "Booking notifications": "బుకింగ్ నోటిఫికేషన్‌లు",
+        "Enabling notifications...": "నోటిఫికేషన్‌లు ప్రారంభిస్తున్నాం...",
+        "Unable to save notification device.": "నోటిఫికేషన్ పరికరాన్ని సేవ్ చేయలేకపోయాం.",
+        "Notification registration timed out.": "నోటిఫికేషన్ నమోదు సమయం ముగిసింది.",
         "My Profile": "నా ప్రొఫైల్",
         "Profile": "ప్రొఫైల్",
         "Service Areas": "సేవా ప్రాంతాలు",

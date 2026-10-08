@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import CookPushOptIn from "@/components/CookPushOptIn";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { setCookAvailability } from "@/lib/cook/availability";
 import { useCookLanguage } from "@/lib/cook/use-language";
@@ -49,6 +50,7 @@ export default function CookHomePage() {
   const [notice, setNotice] = useState("");
   const [isOnline, setIsOnline] = useState(false);
   const [cookProfileId, setCookProfileId] = useState<string | null>(null);
+  const [cookUserId, setCookUserId] = useState<string | null>(null);
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
   const [cookStatus, setCookStatus] = useState<CookStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
@@ -73,6 +75,7 @@ export default function CookHomePage() {
         return;
       }
 
+      setCookUserId(user.id);
       const { data: profile, error: profileError } = await client.from("cook_profiles")
         .select("id, status, is_online")
         .eq("user_id", user.id)
@@ -130,6 +133,8 @@ export default function CookHomePage() {
     <>
       <main className="cook-home-page" lang={language}>
         <header className="cook-home-header"><div className="cook-home-brand"><div className="cook-home-mark"><House /><span>♥</span></div><strong>Vantavaru</strong></div></header>
+
+        {supabase && cookUserId && <CookPushOptIn key={cookUserId} client={supabase} userId={cookUserId} t={t} />}
 
         <section className="cook-welcome"><div><h1>{t("Hello, Lakshmi!")}</h1><p>{t("Here's your cooking journey at a glance.")}</p></div><span className={`approval-pill ${cookStatus ?? "unavailable"}`} role="status"><ShieldCheck /> {t(statusLoading ? "Checking..." : cookStatus ? cookStatus.charAt(0).toUpperCase() + cookStatus.slice(1) : "Unavailable")}<small>{t(statusLoading ? "Loading profile status" : cookStatus === "approved" ? "Your profile is verified" : cookStatus === "pending" ? "Awaiting admin review" : cookStatus === "rejected" ? "Review your application" : statusError)}</small></span></section>
 
