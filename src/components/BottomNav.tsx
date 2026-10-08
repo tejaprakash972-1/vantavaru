@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 
 type BottomNavItem = {
   label: string;
+  displayLabel?: string;
   icon: LucideIcon;
 };
 
@@ -53,7 +54,7 @@ export default function BottomNav({ items, activeLabel, onSelect }: BottomNavPro
             onClick={(event) => handleClick(event, item.label)}
           >
             <Icon aria-hidden="true" />
-            <small>{item.label}</small>
+            <small>{item.displayLabel ?? item.label}</small>
           </button>
         );
       })}

@@ -286,7 +286,7 @@ export default function Home() {
         <section className="hero-panel">
           <div className="hero-copy">
             <p className="eyebrow">COOKING, MADE PERSONAL</p>
-            <h1>Delicious<br />home-cooked meals<br />at your doorstep</h1>
+            <h1>Delicious<br />cooked meals<br />at your home</h1>
             <p className="hero-description">Book a professional cook for<br className="desktop-break" /> fresh, healthy and homemade meals.</p>
             <button className="primary-button" onClick={bookCook} disabled={isNavigating}>{isNavigating ? <><LoaderCircle className="button-spinner" aria-hidden="true" /> Opening booking</> : <>Book a Cook</>}</button>
           </div>

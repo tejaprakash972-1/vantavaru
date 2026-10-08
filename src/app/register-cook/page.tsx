@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type ComponentType, type MouseEvent, type ReactNode } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cookLanguageNames, translateCook, type CookLanguage } from "@/lib/cook/language";
 import {
     ArrowLeft,
     ArrowRight,
@@ -37,6 +38,8 @@ type CookDocuments = {
 
 export default function RegisterCookPage() {
     const router = useRouter();
+    const [language, setLanguage] = useState<CookLanguage>("en");
+    const t = (text: string) => translateCook(language, text);
     const [fullName, setFullName] = useState("");
     const [dateOfBirth, setDateOfBirth] = useState("");
     const [cuisinesSelected, setCuisinesSelected] = useState<string[]>([]);
@@ -98,6 +101,7 @@ export default function RegisterCookPage() {
             cooking_experience: experience,
             cuisines: cuisinesSelected,
             languages: languagesSelected,
+            preferred_language: language,
             house_flat_no: address.house,
             street_area: address.street,
             city: address.city,
@@ -153,41 +157,46 @@ export default function RegisterCookPage() {
     }
 
     return (
-        <main className="cook-register-page">
+        <main className="cook-register-page" lang={language}>
             <header className="cook-register-header">
-                <button className="cook-back-button" onClick={() => router.back()} aria-label="Go back"><ArrowLeft /></button>
+                <button className="cook-back-button" onClick={() => router.back()} aria-label={t("Go back")}><ArrowLeft /></button>
                 <div className="cook-register-brand"><div className="cook-register-mark"><HouseMark /><span>♥</span></div><strong>Vantavaru</strong></div>
                 <span className="cook-header-spacer" aria-hidden="true" />
             </header>
 
-            <section className="cook-register-intro"><h1>Register as a Cook</h1><p>Tell us about yourself and start cooking with Vantavaru.</p></section>
+            <section className="cook-register-intro"><h1>{t("Register as a Cook")}</h1><p>{t("Tell us about yourself and start cooking with Vantavaru.")}</p></section>
+            <label className="cook-language-setting cook-register-language">{t("App Language")}
+                <select value={language} onChange={(event) => setLanguage(event.target.value as CookLanguage)}>
+                    {(Object.keys(cookLanguageNames) as CookLanguage[]).map((code) => <option key={code} value={code}>{cookLanguageNames[code]}</option>)}
+                </select>
+            </label>
 
-            <nav className="cook-progress" aria-label="Registration progress">
-                {["Basic Details", "Address", "Documents", "Review"].map((label, index) => <div className={index <= step - 1 ? "progress-step active" : "progress-step"} key={label}><span>{index < step - 1 ? "✓" : index + 1}</span><strong>{label}</strong></div>)}
+            <nav className="cook-progress" aria-label={t("Registration progress")}>
+                {["Basic Details", "Address", "Documents", "Review"].map((label, index) => <div className={index <= step - 1 ? "progress-step active" : "progress-step"} key={label}><span>{index < step - 1 ? "✓" : index + 1}</span><strong>{t(label)}</strong></div>)}
             </nav>
 
             <form className="cook-form" onSubmit={handleSubmit}>
                 {step === 1 ? <>
-                    <div className="cook-section-heading"><h2>Basic Details</h2><span>Step 1 of 4</span></div>
+                    <div className="cook-section-heading"><h2>{t("Basic Details")}</h2><span>{t("Step 1 of 4")}</span></div>
 
-                    <label className="cook-field-label">Full Name <em>*</em><span className="cook-input"><UserRound /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Enter your full name" /></span></label>
-                    <label className="cook-field-label">Phone Number <em>*</em><span className="cook-input cook-input-muted"><Phone /><span className="phone-prefix">+91</span><input required aria-label="Phone number" type="tel" inputMode="numeric" maxLength={10} pattern="[0-9]{10}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ""))} /></span><small>This will be used for login and communication.</small></label>
-                    <label className="cook-field-label">Date of Birth <em>*</em><span className="cook-input"><CalendarDays /><input required type="date" aria-label="Date of birth" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></span></label>
+                    <label className="cook-field-label">{t("Full Name")} <em>*</em><span className="cook-input"><UserRound /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder={t("Enter your full name")} /></span></label>
+                    <label className="cook-field-label">{t("Phone Number")} <em>*</em><span className="cook-input cook-input-muted"><Phone /><span className="phone-prefix">+91</span><input required aria-label={t("Phone number")} type="tel" inputMode="numeric" maxLength={10} pattern="[0-9]{10}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ""))} /></span><small>{t("This will be used for login and communication.")}</small></label>
+                    <label className="cook-field-label">{t("Date of Birth")} <em>*</em><span className="cook-input"><CalendarDays /><input required type="date" aria-label={t("Date of birth")} value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></span></label>
 
-                    <fieldset className="gender-field"><legend>Gender <em>*</em></legend><div className="gender-options">{["Female", "Male", "Other"].map((item) => <label key={item}><input type="radio" name="gender" checked={gender === item} onChange={() => setGender(item)} /><span className="radio-dot" />{item}</label>)}</div></fieldset>
+                    <fieldset className="gender-field"><legend>{t("Gender")} <em>*</em></legend><div className="gender-options">{["Female", "Male", "Other"].map((item) => <label key={item}><input type="radio" name="gender" checked={gender === item} onChange={() => setGender(item)} /><span className="radio-dot" />{t(item)}</label>)}</div></fieldset>
 
                     <div className="cook-two-column">
-                        <label className="cook-field-label">Cooking Experience <em>*</em><span className="cook-input select-input"><ChefHat /><select required value={experience} onChange={(event) => setExperience(event.target.value)}><option value="">Select experience</option><option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>5+ years</option></select><ChevronDown /></span></label>
-                        <MultiSelect label="Cuisines You Cook" icon={Utensils} placeholder="Select cuisines" options={cuisines} selected={cuisinesSelected} onChange={setCuisinesSelected} />
+                        <label className="cook-field-label">{t("Cooking Experience")} <em>*</em><span className="cook-input select-input"><ChefHat /><select required value={experience} onChange={(event) => setExperience(event.target.value)}><option value="">{t("Select experience")}</option>{["Less than 1 year", "1–3 years", "3–5 years", "5+ years"].map((option) => <option key={option} value={option}>{t(option)}</option>)}</select><ChevronDown /></span></label>
+                        <MultiSelect label={t("Cuisines You Cook")} icon={Utensils} placeholder={t("Select cuisines")} options={cuisines} selected={cuisinesSelected} onChange={setCuisinesSelected} t={t} />
                     </div>
 
-                    <MultiSelect label="Languages Spoken" icon={Languages} placeholder="Select languages" options={languages} selected={languagesSelected} onChange={setLanguagesSelected} />
+                    <MultiSelect label={t("Languages Spoken")} icon={Languages} placeholder={t("Select languages")} options={languages} selected={languagesSelected} onChange={setLanguagesSelected} t={t} />
 
-                    <div className="photo-section"><label className="cook-field-label">Profile Photo <em>*</em></label><div className="photo-row"><label className="upload-photo"><Camera /><strong>{photoName || "Upload Photo"}</strong><small>JPG, PNG (Max 5 MB)</small><input type="file" accept="image/png,image/jpeg" required={!photoName} onChange={(event) => setPhotoName(event.target.files?.[0]?.name || "")} /></label><div className="photo-tips"><strong>Use a clear photo</strong><span>✓ &nbsp; Your face should be clearly visible</span><span>✓ &nbsp; Good lighting helps build trust</span><span>✓ &nbsp; This photo will be visible to customers</span></div></div></div>
+                    <div className="photo-section"><label className="cook-field-label">{t("Profile Photo")} <em>*</em></label><div className="photo-row"><label className="upload-photo"><Camera /><strong>{photoName || t("Upload Photo")}</strong><small>{t("JPG, PNG (Max 5 MB)")}</small><input type="file" accept="image/png,image/jpeg" required={!photoName} onChange={(event) => setPhotoName(event.target.files?.[0]?.name || "")} /></label><div className="photo-tips"><strong>{t("Use a clear photo")}</strong><span>✓ &nbsp; {t("Your face should be clearly visible")}</span><span>✓ &nbsp; {t("Good lighting helps build trust")}</span><span>✓ &nbsp; {t("This photo will be visible to customers")}</span></div></div></div>
 
-                    <button className="cook-continue-button" type="submit">{saved ? "Details Saved" : "Save & Continue"} <ArrowRight /></button>
-                    {saved && <p className="cook-saved-message" role="status">Your basic details are saved. Next: address.</p>}
-                </> : step === 2 ? <AddressStep address={address} setAddress={setAddress} onBack={() => setStep(1)} /> : step === 3 ? <DocumentsStep documents={documents} setDocuments={setDocuments} onBack={() => setStep(2)} saved={saved} /> : <CookReview fullName={fullName} phoneNumber={phoneNumber} dateOfBirth={dateOfBirth} gender={gender} experience={experience} address={address} documents={documents} cuisines={cuisinesSelected} languages={languagesSelected} onBack={() => setStep(3)} onEdit={(section) => setStep(section)} isSubmitting={isSubmitting} submitError={submitError} />}
+                    <button className="cook-continue-button" type="submit">{t(saved ? "Details Saved" : "Save & Continue")} <ArrowRight /></button>
+                    {saved && <p className="cook-saved-message" role="status">{t("Your basic details are saved. Next: address.")}</p>}
+                </> : step === 2 ? <AddressStep address={address} setAddress={setAddress} onBack={() => setStep(1)} t={t} /> : step === 3 ? <DocumentsStep documents={documents} setDocuments={setDocuments} onBack={() => setStep(2)} saved={saved} t={t} /> : <CookReview fullName={fullName} phoneNumber={phoneNumber} dateOfBirth={dateOfBirth} gender={gender} experience={experience} address={address} documents={documents} cuisines={cuisinesSelected} languages={languagesSelected} onBack={() => setStep(3)} onEdit={(section) => setStep(section)} isSubmitting={isSubmitting} submitError={submitError} t={t} />}
             </form>
         </main>
     );
@@ -197,75 +206,75 @@ function HouseMark() {
     return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 22 24 7l18 15M11 20v21h26V20M18 41V28h12v13" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" /><path d="M20 18c0-3 4-4 4-1 0-3 4-2 4 1 0 3-4 6-4 6s-4-3-4-6Z" fill="#eb5725" stroke="#eb5725" /></svg>;
 }
 
-function AddressStep({ address, setAddress, onBack }: { address: { house: string; street: string; city: string; pincode: string; landmark: string }; setAddress: (value: { house: string; street: string; city: string; pincode: string; landmark: string }) => void; onBack: () => void }) {
+function AddressStep({ address, setAddress, onBack, t }: { address: { house: string; street: string; city: string; pincode: string; landmark: string }; setAddress: (value: { house: string; street: string; city: string; pincode: string; landmark: string }) => void; onBack: () => void; t: (text: string) => string }) {
     const update = (key: keyof typeof address, value: string) => setAddress({ ...address, [key]: value });
 
     return <>
-        <div className="address-callout"><span><MapPin /></span><div><strong>Your Address</strong><p>This helps us show you to nearby customers.</p></div></div>
-        <div className="cook-section-heading"><h2>Address Details</h2><span>Step 2 of 4</span></div>
-        <label className="cook-field-label">House / Flat No. <em>*</em><span className="cook-input"><Building2 /><input required value={address.house} onChange={(event) => update("house", event.target.value)} placeholder="Enter house or flat number" /></span></label>
-        <label className="cook-field-label">Street / Area / Locality <em>*</em><span className="cook-input"><Route /><input required value={address.street} onChange={(event) => update("street", event.target.value)} placeholder="Enter street, area or locality" /></span></label>
-        <div className="address-two-column"><label className="cook-field-label">City <em>*</em><span className="cook-input select-input"><Building2 /><select required value={address.city} onChange={(event) => update("city", event.target.value)}><option value="">Select city</option><option>Hyderabad</option><option>Bengaluru</option><option>Chennai</option><option>Mumbai</option></select><ChevronDown /></span></label><label className="cook-field-label">Pincode <em>*</em><span className="cook-input"><MapPin /><input required inputMode="numeric" maxLength={6} pattern="[0-9]{6}" value={address.pincode} onChange={(event) => update("pincode", event.target.value.replace(/\D/g, ""))} placeholder="Enter pincode" /></span></label></div>
-        <label className="cook-field-label">Landmark <small>(Optional)</small><span className="cook-input"><Navigation /><input value={address.landmark} onChange={(event) => update("landmark", event.target.value)} placeholder="e.g. Near Metro Station, City Mall" /></span></label>
-        <div className="service-area-callout"><span><Navigation /></span><div><strong>Service Area</strong><p>We will show your profile to customers in and around this location.</p></div></div>
-        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> Back</button><button className="cook-continue-button" type="submit">Save &amp; Continue <ArrowRight /></button></div>
+        <div className="address-callout"><span><MapPin /></span><div><strong>{t("Your Address")}</strong><p>{t("This helps us show you to nearby customers.")}</p></div></div>
+        <div className="cook-section-heading"><h2>{t("Address Details")}</h2><span>{t("Step 2 of 4")}</span></div>
+        <label className="cook-field-label">{t("House / Flat No.")} <em>*</em><span className="cook-input"><Building2 /><input required value={address.house} onChange={(event) => update("house", event.target.value)} placeholder={t("Enter house or flat number")} /></span></label>
+        <label className="cook-field-label">{t("Street / Area / Locality")} <em>*</em><span className="cook-input"><Route /><input required value={address.street} onChange={(event) => update("street", event.target.value)} placeholder={t("Enter street, area or locality")} /></span></label>
+        <div className="address-two-column"><label className="cook-field-label">{t("City")} <em>*</em><span className="cook-input select-input"><Building2 /><select required value={address.city} onChange={(event) => update("city", event.target.value)}><option value="">{t("Select city")}</option>{["Hyderabad", "Bengaluru", "Chennai", "Mumbai"].map((city) => <option key={city} value={city}>{city}</option>)}</select><ChevronDown /></span></label><label className="cook-field-label">{t("Pincode")} <em>*</em><span className="cook-input"><MapPin /><input required inputMode="numeric" maxLength={6} pattern="[0-9]{6}" value={address.pincode} onChange={(event) => update("pincode", event.target.value.replace(/\D/g, ""))} placeholder={t("Enter pincode")} /></span></label></div>
+        <label className="cook-field-label">{t("Landmark")} <small>{t("(Optional)")}</small><span className="cook-input"><Navigation /><input value={address.landmark} onChange={(event) => update("landmark", event.target.value)} placeholder={t("e.g. Near Metro Station, City Mall")} /></span></label>
+        <div className="service-area-callout"><span><Navigation /></span><div><strong>{t("Service Area")}</strong><p>{t("We will show your profile to customers in and around this location.")}</p></div></div>
+        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> {t("Back")}</button><button className="cook-continue-button" type="submit">{t("Save & Continue")} <ArrowRight /></button></div>
     </>;
 }
 
-function DocumentsStep({ documents, setDocuments, onBack, saved }: { documents: CookDocuments; setDocuments: (value: CookDocuments) => void; onBack: () => void; saved: boolean }) {
+function DocumentsStep({ documents, setDocuments, onBack, saved, t }: { documents: CookDocuments; setDocuments: (value: CookDocuments) => void; onBack: () => void; saved: boolean; t: (text: string) => string }) {
     const updateFile = (key: keyof CookDocuments, file: File | undefined) => setDocuments({ ...documents, [key]: file || null });
 
     return <>
-        <div className="cook-section-heading"><div><h2>Upload Documents</h2><p className="documents-subtitle">These documents help us verify your identity and keep our community safe.</p></div><span>Step 3 of 4</span></div>
-        <DocumentCard title="Profile Photo" description="Upload a clear photo of yourself" required fileName={documents.profile?.name || ""} icon={Camera} accept="image/png,image/jpeg" onChange={(file) => updateFile("profile", file)} tipsTitle="Photo Guidelines" tips={["Your face should be clearly visible", "Use good lighting", "Avoid blurred or cropped photos", "This photo will be visible to customers"]} />
-        <DocumentCard title="Aadhaar Card" description="Upload a clear copy of your Aadhaar card (front and back)" required fileName={documents.aadhaarFront && documents.aadhaarBack ? "2 files selected" : documents.aadhaarFront?.name || ""} icon={IdCard} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("aadhaarFront", file)} secondaryFileName={documents.aadhaarBack?.name || ""} onSecondaryChange={(file) => updateFile("aadhaarBack", file)} tipsTitle="Aadhaar Guidelines" tips={["Image should be clear and readable", "All corners should be visible", "File size should be less than 5 MB", "We use this only for verification purposes"]} />
-        <DocumentCard title="Additional ID" description="You can upload PAN card, Driving license or Voter ID" fileName={documents.additional?.name || ""} icon={FileText} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("additional", file)} tipsTitle="Accepted Documents" tips={["PAN Card", "Driving License", "Voter ID", "This helps us with additional verification (optional)."]} />
-        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> Back</button><button className="cook-continue-button" type="submit">{saved ? "Documents Saved" : "Save & Continue"} <ArrowRight /></button></div>
+        <div className="cook-section-heading"><div><h2>{t("Upload Documents")}</h2><p className="documents-subtitle">{t("These documents help us verify your identity and keep our community safe.")}</p></div><span>{t("Step 3 of 4")}</span></div>
+        <DocumentCard t={t} title="Profile Photo" description="Upload a clear photo of yourself" required fileName={documents.profile?.name || ""} icon={Camera} accept="image/png,image/jpeg" onChange={(file) => updateFile("profile", file)} tipsTitle="Photo Guidelines" tips={["Your face should be clearly visible", "Use good lighting", "Avoid blurred or cropped photos", "This photo will be visible to customers"]} />
+        <DocumentCard t={t} title="Aadhaar Card" description="Upload a clear copy of your Aadhaar card (front and back)" required fileName={documents.aadhaarFront && documents.aadhaarBack ? t("2 files selected") : documents.aadhaarFront?.name || ""} icon={IdCard} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("aadhaarFront", file)} secondaryFileName={documents.aadhaarBack?.name || ""} onSecondaryChange={(file) => updateFile("aadhaarBack", file)} tipsTitle="Aadhaar Guidelines" tips={["Image should be clear and readable", "All corners should be visible", "File size should be less than 5 MB", "We use this only for verification purposes"]} />
+        <DocumentCard t={t} title="Additional ID" description="You can upload PAN card, Driving license or Voter ID" fileName={documents.additional?.name || ""} icon={FileText} accept="image/png,image/jpeg,application/pdf" onChange={(file) => updateFile("additional", file)} tipsTitle="Accepted Documents" tips={["PAN Card", "Driving License", "Voter ID", "This helps us with additional verification (optional)."]} />
+        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> {t("Back")}</button><button className="cook-continue-button" type="submit">{t(saved ? "Documents Saved" : "Save & Continue")} <ArrowRight /></button></div>
     </>;
 }
 
-function CookReview({ fullName, phoneNumber, dateOfBirth, gender, experience, address, documents, cuisines, languages, onBack, onEdit, isSubmitting, submitError }: { fullName: string; phoneNumber: string; dateOfBirth: string; gender: string; experience: string; address: { house: string; street: string; city: string; pincode: string; landmark: string }; documents: CookDocuments; cuisines: string[]; languages: string[]; onBack: () => void; onEdit: (section: 1 | 2 | 3) => void; isSubmitting: boolean; submitError: string }) {
+function CookReview({ fullName, phoneNumber, dateOfBirth, gender, experience, address, documents, cuisines, languages, onBack, onEdit, isSubmitting, submitError, t }: { fullName: string; phoneNumber: string; dateOfBirth: string; gender: string; experience: string; address: { house: string; street: string; city: string; pincode: string; landmark: string }; documents: CookDocuments; cuisines: string[]; languages: string[]; onBack: () => void; onEdit: (section: 1 | 2 | 3) => void; isSubmitting: boolean; submitError: string; t: (text: string) => string }) {
     const edit = (section: 1 | 2 | 3) => (event: MouseEvent<HTMLButtonElement>) => { event.preventDefault(); onEdit(section); };
     return <>
-        <div className="review-step-heading"><div><h2>Review your details</h2><p>Review your details before submitting your application.</p></div><span>Step 4 of 4</span></div>
-        <ReviewSection icon={UserRound} title="Basic Details" onEdit={edit(1)}><ReviewRow label="Name" value={fullName || "Not provided"} /><ReviewRow label="Phone Number" value={`+91 ${phoneNumber}`} /><ReviewRow label="Date of Birth" value={dateOfBirth || "Not provided"} /><ReviewRow label="Gender" value={gender} /><ReviewRow label="Cooking Experience" value={experience || "Not selected"} /><ReviewRow label="Cuisines" value={cuisines.length ? cuisines.join(", ") : "Not selected"} /><ReviewRow label="Languages Spoken" value={languages.length ? languages.join(", ") : "Not selected"} /></ReviewSection>
-        <ReviewSection icon={MapPin} title="Address" onEdit={edit(2)}><ReviewRow label="House / Flat No." value={address.house || "Not provided"} /><ReviewRow label="Street / Area / Locality" value={address.street || "Not provided"} /><ReviewRow label="City" value={address.city || "Not selected"} /><ReviewRow label="Pincode" value={address.pincode || "Not provided"} /><ReviewRow label="Landmark" value={address.landmark || "Not provided"} /><ReviewRow label="Service Area" value="Within 5 km" /></ReviewSection>
-        <ReviewSection icon={FileText} title="Documents" onEdit={edit(3)}><div className="review-document-grid"><ReviewDocument title="Profile Photo" value={documents.profile?.name || "Not uploaded"} icon={Camera} /><ReviewDocument title="Aadhaar Card" value={documents.aadhaarFront && documents.aadhaarBack ? "Front & Back Uploaded" : "Not uploaded"} icon={IdCard} /><ReviewDocument title="Additional ID" value={documents.additional?.name || "Optional"} icon={FileText} /></div></ReviewSection>
-        <div className="review-verification-note"><Info /><span>Your details will be verified by our team. We&apos;ll notify you once your account is approved.</span></div>
-        {submitError && <p className="cook-submit-error" role="alert">{submitError}</p>}
-        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> Back</button><button className="cook-continue-button" type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Application"} <ArrowRight /></button></div>
-        <p className="terms-note">By submitting, you agree to our <u>Terms &amp; Conditions</u></p>
-        {isSubmitting && <div className="cook-submit-overlay" role="status" aria-live="polite" aria-label="Submitting your cook application"><span className="cook-submit-spinner" /><strong>Submitting your application...</strong><small>Uploading documents and saving your details.</small></div>}
+        <div className="review-step-heading"><div><h2>{t("Review your details")}</h2><p>{t("Review your details before submitting your application.")}</p></div><span>{t("Step 4 of 4")}</span></div>
+        <ReviewSection t={t} icon={UserRound} title="Basic Details" onEdit={edit(1)}><ReviewRow t={t} label="Name" value={fullName || "Not provided"} /><ReviewRow t={t} label="Phone Number" value={`+91 ${phoneNumber}`} /><ReviewRow t={t} label="Date of Birth" value={dateOfBirth || "Not provided"} /><ReviewRow t={t} label="Gender" value={gender} /><ReviewRow t={t} label="Cooking Experience" value={experience || "Not selected"} /><ReviewRow t={t} label="Cuisines" value={cuisines.length ? cuisines.join(", ") : "Not selected"} /><ReviewRow t={t} label="Languages Spoken" value={languages.length ? languages.join(", ") : "Not selected"} /></ReviewSection>
+        <ReviewSection t={t} icon={MapPin} title="Address" onEdit={edit(2)}><ReviewRow t={t} label="House / Flat No." value={address.house || "Not provided"} /><ReviewRow t={t} label="Street / Area / Locality" value={address.street || "Not provided"} /><ReviewRow t={t} label="City" value={address.city || "Not selected"} /><ReviewRow t={t} label="Pincode" value={address.pincode || "Not provided"} /><ReviewRow t={t} label="Landmark" value={address.landmark || "Not provided"} /><ReviewRow t={t} label="Service Area" value="Within 5 km" /></ReviewSection>
+        <ReviewSection t={t} icon={FileText} title="Documents" onEdit={edit(3)}><div className="review-document-grid"><ReviewDocument t={t} title="Profile Photo" value={documents.profile?.name || "Not uploaded"} icon={Camera} /><ReviewDocument t={t} title="Aadhaar Card" value={documents.aadhaarFront && documents.aadhaarBack ? "Front & Back Uploaded" : "Not uploaded"} icon={IdCard} /><ReviewDocument t={t} title="Additional ID" value={documents.additional?.name || "Optional"} icon={FileText} /></div></ReviewSection>
+        <div className="review-verification-note"><Info /><span>{t("Your details will be verified by our team. We'll notify you once your account is approved.")}</span></div>
+        {submitError && <p className="cook-submit-error" role="alert">{t(submitError)}</p>}
+        <div className="address-actions"><button type="button" className="address-back-button" onClick={onBack}><ArrowLeft /> {t("Back")}</button><button className="cook-continue-button" type="submit" disabled={isSubmitting}>{t(isSubmitting ? "Submitting..." : "Submit Application")} <ArrowRight /></button></div>
+        <p className="terms-note">{t("By submitting, you agree to our")} <u>{t("Terms & Conditions")}</u></p>
+        {isSubmitting && <div className="cook-submit-overlay" role="status" aria-live="polite" aria-label={t("Submitting your cook application")}><span className="cook-submit-spinner" /><strong>{t("Submitting your application...")}</strong><small>{t("Uploading documents and saving your details.")}</small></div>}
     </>;
 }
 
-function ReviewSection({ icon: Icon, title, onEdit, children }: { icon: ComponentType<{ size?: number; className?: string }>; title: string; onEdit: (event: MouseEvent<HTMLButtonElement>) => void; children: ReactNode }) {
-    return <section className="review-register-card"><header><span className="review-section-icon"><Icon /></span><h3>{title}</h3><button type="button" onClick={onEdit}><Edit3 /> Edit</button></header><div className="review-register-content">{children}</div></section>;
+function ReviewSection({ icon: Icon, title, onEdit, children, t }: { icon: ComponentType<{ size?: number; className?: string }>; title: string; onEdit: (event: MouseEvent<HTMLButtonElement>) => void; children: ReactNode; t: (text: string) => string }) {
+    return <section className="review-register-card"><header><span className="review-section-icon"><Icon /></span><h3>{t(title)}</h3><button type="button" onClick={onEdit}><Edit3 /> {t("Edit")}</button></header><div className="review-register-content">{children}</div></section>;
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
-    return <div className="review-register-row"><span>{label}</span><strong>{value}</strong></div>;
+function ReviewRow({ label, value, t }: { label: string; value: string; t: (text: string) => string }) {
+    return <div className="review-register-row"><span>{t(label)}</span><strong>{t(value)}</strong></div>;
 }
 
-function ReviewDocument({ title, value, icon: Icon }: { title: string; value: string; icon: ComponentType<{ size?: number; className?: string }> }) {
-    return <div className="review-document"><span><Icon /></span><strong>{title}</strong><small>{value}</small></div>;
+function ReviewDocument({ title, value, icon: Icon, t }: { title: string; value: string; icon: ComponentType<{ size?: number; className?: string }>; t: (text: string) => string }) {
+    return <div className="review-document"><span><Icon /></span><strong>{t(title)}</strong><small>{t(value)}</small></div>;
 }
 
-function DocumentCard({ title, description, required: requiredField = false, fileName, secondaryFileName, icon: Icon, accept, onChange, onSecondaryChange, tipsTitle, tips }: { title: string; description: string; required?: boolean; fileName: string; secondaryFileName?: string; icon: ComponentType<{ size?: number; className?: string }>; accept: string; onChange: (file: File | undefined) => void; onSecondaryChange?: (file: File | undefined) => void; tipsTitle: string; tips: string[] }) {
-    return <section className="document-card"><div className="document-card-heading"><h3>{title} {requiredField && <em>*</em>}</h3><p>{description}</p></div><div className={secondaryFileName !== undefined ? "document-upload-row document-upload-row-aadhaar" : "document-upload-row"}><UploadBox title={secondaryFileName !== undefined ? "Upload Front Side" : "Tap to upload photo"} fileName={fileName} icon={Icon} accept={accept} required={requiredField} onChange={onChange} /><>{secondaryFileName !== undefined && onSecondaryChange && <UploadBox title="Upload Back Side" fileName={secondaryFileName} icon={IdCard} accept={accept} required onChange={onSecondaryChange} />}</><div className="document-tips"><strong>{tipsTitle}</strong>{tips.map((tip) => <span key={tip}><CheckCircle2 /> {tip}</span>)}</div></div></section>;
+function DocumentCard({ title, description, required: requiredField = false, fileName, secondaryFileName, icon: Icon, accept, onChange, onSecondaryChange, tipsTitle, tips, t }: { title: string; description: string; required?: boolean; fileName: string; secondaryFileName?: string; icon: ComponentType<{ size?: number; className?: string }>; accept: string; onChange: (file: File | undefined) => void; onSecondaryChange?: (file: File | undefined) => void; tipsTitle: string; tips: string[]; t: (text: string) => string }) {
+    return <section className="document-card"><div className="document-card-heading"><h3>{t(title)} {requiredField && <em>*</em>}</h3><p>{t(description)}</p></div><div className={secondaryFileName !== undefined ? "document-upload-row document-upload-row-aadhaar" : "document-upload-row"}><UploadBox t={t} title={secondaryFileName !== undefined ? "Upload Front Side" : "Tap to upload photo"} fileName={fileName} icon={Icon} accept={accept} required={requiredField} onChange={onChange} /><>{secondaryFileName !== undefined && onSecondaryChange && <UploadBox t={t} title="Upload Back Side" fileName={secondaryFileName} icon={IdCard} accept={accept} required onChange={onSecondaryChange} />}</><div className="document-tips"><strong>{t(tipsTitle)}</strong>{tips.map((tip) => <span key={tip}><CheckCircle2 /> {t(tip)}</span>)}</div></div></section>;
 }
 
-function UploadBox({ title, fileName, icon: Icon, accept, required = false, onChange }: { title: string; fileName: string; icon: ComponentType<{ size?: number; className?: string }>; accept: string; required?: boolean; onChange: (file: File | undefined) => void }) {
-    return <label className="document-upload-box"><Icon /><strong>{fileName || title}</strong><small>{fileName ? "File selected" : "JPG, PNG, PDF (Max 5 MB)"}</small><input type="file" accept={accept} required={required && !fileName} onChange={(event) => onChange(event.target.files?.[0])} /></label>;
+function UploadBox({ title, fileName, icon: Icon, accept, required = false, onChange, t }: { title: string; fileName: string; icon: ComponentType<{ size?: number; className?: string }>; accept: string; required?: boolean; onChange: (file: File | undefined) => void; t: (text: string) => string }) {
+    return <label className="document-upload-box"><Icon /><strong>{t(fileName || title)}</strong><small>{t(fileName ? "File selected" : "JPG, PNG, PDF (Max 5 MB)")}</small><input type="file" accept={accept} required={required && !fileName} onChange={(event) => onChange(event.target.files?.[0])} /></label>;
 }
 
-function MultiSelect({ label, icon: Icon, placeholder, options, selected, onChange }: { label: string; icon: ComponentType<{ size?: number; className?: string }>; placeholder: string; options: string[]; selected: string[]; onChange: (values: string[]) => void }) {
+function MultiSelect({ label, icon: Icon, placeholder, options, selected, onChange, t }: { label: string; icon: ComponentType<{ size?: number; className?: string }>; placeholder: string; options: string[]; selected: string[]; onChange: (values: string[]) => void; t: (text: string) => string }) {
     const [open, setOpen] = useState(false);
-    const summary = selected.length === 0 ? placeholder : selected.length === 1 ? selected[0] : `${selected.length} selected`;
+    const summary = selected.length === 0 ? placeholder : selected.length === 1 ? t(selected[0]) : `${selected.length} ${t("selected")}`;
 
     function toggleOption(option: string) {
         onChange(selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option]);
     }
 
-    return <div className="cook-field-label multi-select-field"><span>{label} <em>*</em></span><button type="button" className={`cook-input select-input multi-select-trigger ${open ? "multi-select-open" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open}><Icon /><span className={selected.length === 0 ? "select-placeholder" : ""}>{summary}</span><ChevronDown /></button>{open && <div className="multi-select-menu">{options.map((option) => <label className="multi-select-option" key={option}><input type="checkbox" checked={selected.includes(option)} onChange={() => toggleOption(option)} /><span className="multi-select-check">{selected.includes(option) ? "✓" : ""}</span>{option}</label>)}<button type="button" className="multi-select-done" onClick={() => setOpen(false)}>Done</button></div>}<small>You can select multiple</small></div>;
+    return <div className="cook-field-label multi-select-field"><span>{label} <em>*</em></span><button type="button" className={`cook-input select-input multi-select-trigger ${open ? "multi-select-open" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open}><Icon /><span className={selected.length === 0 ? "select-placeholder" : ""}>{summary}</span><ChevronDown /></button>{open && <div className="multi-select-menu">{options.map((option) => <label className="multi-select-option" key={option}><input type="checkbox" checked={selected.includes(option)} onChange={() => toggleOption(option)} /><span className="multi-select-check">{selected.includes(option) ? "✓" : ""}</span>{t(option)}</label>)}<button type="button" className="multi-select-done" onClick={() => setOpen(false)}>{t("Done")}</button></div>}<small>{t("You can select multiple")}</small></div>;
 }

@@ -1803,6 +1803,10 @@ h1 {
 
 .nav-item small {
   font-size: 12px;
+  max-width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
 }
 
 .nav-item.active {
@@ -10532,6 +10536,39 @@ h1 {
   padding: 14px 16px 16px;
 }
 
+.cook-language-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #142338;
+  font-size: 14px;
+}
+
+.cook-language-setting select {
+  min-width: 130px;
+  max-width: 60%;
+  padding: 9px 12px;
+  border: 1px solid #cbd8d3;
+  border-radius: 6px;
+  background: #fff;
+  color: #142338;
+  font: inherit;
+}
+
+.cook-language-setting select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.cook-register-language {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #e0e7ed;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .cook-profile-rows {
   display: flex;
   flex-direction: column;
@@ -10541,7 +10578,7 @@ h1 {
 
 .cook-profile-rows>div {
   display: grid;
-  grid-template-columns: 40% minmax(0, 1fr);
+  grid-template-columns: minmax(0, 40%) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
@@ -10551,6 +10588,7 @@ h1 {
   margin: 0;
   font-size: 13px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .cook-profile-rows dt {
